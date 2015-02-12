@@ -25,8 +25,8 @@ from pymultimonaprs.frame import APRSFrame, InvalidFrame
 
 
 def main():
-    parser = argparse.ArgumentParser(description='HF2APRS-IG Gateway.')
-    parser.add_argument('-c', dest='config', default='/etc/pymultimonaprs.json', help='Use this config file')
+    parser = argparse.ArgumentParser(description='pymultimonaprs.')
+    parser.add_argument('-c', dest='config', default='pymultimonaprs.json', help='Use this config file')
     parser.add_argument('--syslog', action='store_true', help='Log to syslog')
     parser.add_argument('-v', '--verbose', action='store_true', help='Log all traffic - including beacon')
     args = parser.parse_args()

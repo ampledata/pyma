@@ -13,9 +13,13 @@ import os
 import sys
 import shutil
 
-from distutils.core import setup
 from distutils.command.install import install
 from distutils.dir_util import mkpath
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup  # pylint: disable=F0401,E0611
 
 
 class PostInstall(install):
