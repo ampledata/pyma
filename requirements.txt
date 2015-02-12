@@ -1,0 +1,10 @@
+# Python Distribution Package Requirements for pymultimonaprs.
+#
+# Source:: https://github.com/ampledata/pymultimonaprs
+# Author:: Greg Albrecht W2GMD <gba@gregalbrecht.com>
+# Copyright:: Copyright 2015 OnBeep, Inc.
+# License:: GNU General Public License, Version 3
+
+
+flake8==2.1.0
+pylint==1.2.1
