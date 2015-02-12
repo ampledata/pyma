@@ -1,13 +1,20 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import threading
-import socket
-import Queue
-import pkg_resources
-import sys
+"""pymultimonaprs Package."""
+
+__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
+__copyright__ = 'Copyright 2015 OnBeep, Inc.'
+__license__ = 'GNU General Public License, Version 3'
+
+
 import logging
-import select
-from time import sleep
+import pkg_resources
+import Queue
+import socket
+import threading
+import time
+
 
 class IGate:
     def __init__(self, callsign, passcode, gateway):
@@ -37,21 +44,25 @@ class IGate:
                 ip = socket.gethostbyname(self.server)
                 self.log.info("connecting... %s:%i" % (ip, self.port))
                 self.socket.connect((ip, self.port))
-                self.log.info("connected")
+                self.log.info('connected')
 
                 server_hello = self.socket.recv(1024)
                 self.log.info(server_hello.strip(" \r\n"))
 
                 # Try to get my version
                 try:
-                    version = pkg_resources.get_distribution("pymultimonaprs").version
+                    version = pkg_resources.get_distribution(
+                        'pymultimonaprs').version
                 except:
                     version = 'GIT'
 
                 # Login
-                self.log.info("login %s (PyMultimonAPRS %s)" % (self.callsign, version))
-                self.socket.send("user %s pass %s vers PyMultimonAPRS %s filter r/38/-171/1\r\n" %
-                        (self.callsign, self.passcode, version))
+                self.log.info("login %s (PyMultimonAPRS %s)" % (
+                    self.callsign, version))
+                self.socket.send(
+                    "user %s pass %s vers PyMultimonAPRS %s filter "
+                    "r/38/-171/1\r\n" % (
+                        self.callsign, self.passcode, version))
 
                 server_return = self.socket.recv(1024)
                 self.log.info(server_return.strip(" \r\n"))
@@ -59,7 +70,7 @@ class IGate:
                 connected = True
             except socket.error as e:
                 self.log.warn("Error when connecting to server: '%s'" % str(e))
-                sleep(1)
+                time.sleep(1)
 
     def _disconnect(self):
         try:
@@ -71,8 +82,9 @@ class IGate:
     def send(self, frame):
         try:
             self._sending_queue.put(frame, True, 10)
-        except Queue.Full as e:
-            self.log.warn("Lost TX data (queue full): '%s'" % frame.export(False))
+        except Queue.Full:
+            self.log.warn(
+                "Lost TX data (queue full): '%s'" % frame.export(False))
 
     def _socket_worker(self):
         """
@@ -89,7 +101,10 @@ class IGate:
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
                         if sent == 0:
-                            raise socket.error(0, "Failed to send data - number of sent bytes: 0")
+                            raise socket.error(
+                                0,
+                                "Failed to send data - "
+                                "number of sent bytes: 0")
                         totalsent += sent
                 except Queue.Empty:
                     pass
@@ -97,7 +112,7 @@ class IGate:
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(0)
                 try:
-                    res = self.socket.recv(40960)
+                    self.socket.recv(40960)
                 except socket.error as e:
                     if not e.errno == 11:
                         # if the error is other than 'rx queue empty'
@@ -105,12 +120,13 @@ class IGate:
                 self.socket.setblocking(1)
             except socket.error as e:
                 # possible errors on io:
-                # [Errno  11] Buffer is empty (maybe not when using blocking sockets)
+                # [Errno  11] Buffer is empty
+                #   (maybe not when using blocking sockets)
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
                 self.log.warn("Connection issue: '%s'" % str(e))
-                sleep(1)
+                time.sleep(1)
                 # try to reconnect
                 self._connect()
         self.log.debug("sending thread exit")

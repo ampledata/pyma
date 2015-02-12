@@ -1,10 +1,19 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""pymultimonaprs Package."""
+
+__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
+__copyright__ = 'Copyright 2015 OnBeep, Inc.'
+__license__ = 'GNU General Public License, Version 3'
+
 
 import threading
 import subprocess
 import re
 
-start_frame_re = re.compile(r'^APRS: (.*)')
+START_FRAME_REX = re.compile(r'^APRS: (.*)')
+
 
 class Multimon:
     def __init__(self, frame_handler, config):
@@ -30,16 +39,40 @@ class Multimon:
         else:
             if self.config['source'] == 'rtl':
                 proc_src = subprocess.Popen(
-                    ['rtl_fm', '-f', str(int(self.config['rtl']['freq'] * 1e6)), '-s', '22050',
-                    '-p', str(self.config['rtl']['ppm']), '-g', str(self.config['rtl']['gain']),
-                    '-E', 'offset' if self.config['rtl'].get('offset_tuning', False) else 'none',
-                    '-d', str(self.config['rtl'].get('device_index', 0)), '-'],
+                    [
+                        'rtl_fm',
+                        '-f',
+                        str(int(self.config['rtl']['freq'] * 1e6)),
+                        '-s',
+                        '22050',
+                        '-p',
+                        str(self.config['rtl']['ppm']),
+                        '-g',
+                        str(self.config['rtl']['gain']),
+                        '-E',
+                        'offset' if self.config['rtl'].get('offset_tuning', False) else 'none',
+                        '-d',
+                        str(self.config['rtl'].get('device_index', 0)),
+                        '-'
+                    ],
                     stdout=subprocess.PIPE, stderr=open('/dev/null')
                 )
             elif self.config['source'] == 'alsa':
                 proc_src = subprocess.Popen(
-                    ['arecord', '-D', self.config['alsa']['device'],
-                    '-r', '22050', '-f', 'S16_LE', '-t', 'raw', '-c', '1', '-'],
+                    [
+                        'arecord',
+                        '-D',
+                        self.config['alsa']['device'],
+                        '-r',
+                        '22050',
+                        '-f',
+                        'S16_LE',
+                        '-t',
+                        'raw',
+                        '-c',
+                        '1',
+                        '-'
+                    ],
                     stdout=subprocess.PIPE, stderr=open('/dev/null')
                 )
             proc_mm = subprocess.Popen(
@@ -62,7 +95,7 @@ class Multimon:
         while self._running:
             line = self.subprocs['mm'].stdout.readline()
             line = line.strip()
-            m = start_frame_re.match(line)
+            m = START_FRAME_REX.match(line)
             if m:
                 tnc2_frame = m.group(1)
                 self.frame_handler(tnc2_frame)

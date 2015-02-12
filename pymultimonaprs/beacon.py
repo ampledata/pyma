@@ -1,9 +1,19 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import os
+"""pymultimonaprs Package."""
+
+__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
+__copyright__ = 'Copyright 2015 OnBeep, Inc.'
+__license__ = 'GNU General Public License, Version 3'
+
+
+import datetime
 import json
-from datetime import datetime
+import os
+
 from pymultimonaprs.frame import APRSFrame
+
 
 def process_ambiguity(pos, ambiguity):
     num = bytearray(pos)
@@ -13,8 +23,9 @@ def process_ambiguity(pos, ambiguity):
             i += 1
         # skip the direction
         i += 2
-        num[-i] = " "
+        num[-i] = ' '
     return str(num)
+
 
 def encode_lat(lat):
     lat_dir = 'N' if lat > 0 else 'S'
@@ -23,12 +34,14 @@ def encode_lat(lat):
     lat_min = (lat_abs % 1) * 60
     return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
 
+
 def encode_lng(lng):
     lng_dir = 'E' if lng > 0 else 'W'
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
     lng_min = (lng_abs % 1) * 60
     return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
+
 
 def mkframe(callsign, payload):
     frame = APRSFrame()
@@ -38,12 +51,14 @@ def mkframe(callsign, payload):
     frame.payload = payload
     return frame
 
+
 def get_beacon_frame(lat, lng, callsign, table, symbol, comment, ambiguity):
     enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
     enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
     pos = "%s%s%s" % (enc_lat, table, enc_lng)
     payload = "=%s%s%s" % (pos, symbol, comment)
     return mkframe(callsign, payload)
+
 
 def get_status_frame(callsign, status):
     try:
@@ -58,6 +73,7 @@ def get_status_frame(callsign, status):
     except:
         return None
 
+
 def get_weather_frame(callsign, weather):
     try:
         w = json.load(open(weather))
@@ -65,7 +81,8 @@ def get_weather_frame(callsign, weather):
         # Convert to imperial and encode
 
         # Timestamp
-        wenc = datetime.utcfromtimestamp(int(w['timestamp'])).strftime('%m%d%H%M')
+        wenc = datetime.datetime.utcfromtimestamp(
+            int(w['timestamp'])).strftime('%m%d%H%M')
 
         # Wind
         wind = w.get('wind', {})
@@ -93,8 +110,10 @@ def get_weather_frame(callsign, weather):
         # Humidity
         if 'humidity' in w:
             h = w['humidity']
-            if h == 0: h = 1
-            if h == 100: h = 0
+            if h == 0:
+                h = 1
+            if h == 100:
+                h = 0
             wenc += "h%02d" % h
         else:
             wenc += "h.."

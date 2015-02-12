@@ -14,7 +14,6 @@ import logging
 import logging.handlers
 import signal
 import sys
-import threading
 import time
 
 
@@ -26,9 +25,16 @@ from pymultimonaprs.frame import APRSFrame, InvalidFrame
 
 def main():
     parser = argparse.ArgumentParser(description='pymultimonaprs.')
-    parser.add_argument('-c', dest='config', default='pymultimonaprs.json', help='Use this config file')
+    parser.add_argument(
+        '-c', dest='config',
+        default='pymultimonaprs.json',
+        help='Use this config file')
     parser.add_argument('--syslog', action='store_true', help='Log to syslog')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Log all traffic - including beacon')
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Log all traffic - including beacon')
     args = parser.parse_args()
 
     with open(args.config) as config_file:
@@ -39,15 +45,16 @@ def main():
     logger.setLevel(loglevel)
 
     if args.syslog:
-        loghandler = logging.handlers.SysLogHandler(address = '/dev/log')
+        loghandler = logging.handlers.SysLogHandler(address='/dev/log')
         formater = logging.Formatter('pymultimonaprs: %(message)s')
         loghandler.setFormatter(formater)
     else:
         loghandler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter('[%(asctime)s] %(levelname)+8s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)+8s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
         loghandler.setFormatter(formatter)
     logger.addHandler(loghandler)
-
 
     def mmcb(tnc2_frame):
         try:
@@ -94,12 +101,12 @@ def main():
             if frame:
                 ig.send(frame)
 
-            sleep(config['beacon']['send_every'])
+            time.sleep(config['beacon']['send_every'])
 
     logger.info('Starting pymultimonaprs')
 
     ig = IGate(config['callsign'], config['passcode'], config['gateway'])
-    mm = Multimon(mmcb,config)
+    mm = Multimon(mmcb, config)
 
     def signal_handler(signal, frame):
         logger.info('Stopping pymultimonaprs')
