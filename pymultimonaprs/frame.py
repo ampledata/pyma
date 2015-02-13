@@ -8,7 +8,11 @@ __copyright__ = 'Copyright 2015 OnBeep, Inc.'
 __license__ = 'GNU General Public License, Version 3'
 
 
+import logging
+import logging.handlers
 import re
+
+import pymultimonaprs.constants
 
 
 HEADER_REX = re.compile(
@@ -19,7 +23,17 @@ class InvalidFrame(Exception):
     pass
 
 
-class APRSFrame:
+class APRSFrame(object):
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+    formatter = logging.Formatter(pymultimonaprs.constants.LOG_FORMAT)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.propagate = False
+
     def __init__(self):
         self.source = None
         self.dest = None

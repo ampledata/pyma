@@ -9,16 +9,28 @@ __license__ = 'GNU General Public License, Version 3'
 
 
 import logging
+import logging.handlers
 import pkg_resources
 import Queue
 import socket
 import threading
 import time
 
+import pymultimonaprs.constants
 
-class IGate:
+
+class IGate(object):
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+    formatter = logging.Formatter(pymultimonaprs.constants.LOG_FORMAT)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.propagate = False
+
     def __init__(self, callsign, passcode, gateway):
-        self.log = logging.getLogger('pymultimonaprs')
         self.server, self.port = gateway.split(':')
         self.port = int(self.port)
         self.callsign = callsign
@@ -42,12 +54,12 @@ class IGate:
                 # Connect
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 ip = socket.gethostbyname(self.server)
-                self.log.info("connecting... %s:%i" % (ip, self.port))
+                self.logger.info("connecting... %s:%i" % (ip, self.port))
                 self.socket.connect((ip, self.port))
-                self.log.info('connected')
+                self.logger.info('connected')
 
                 server_hello = self.socket.recv(1024)
-                self.log.info(server_hello.strip(" \r\n"))
+                self.logger.info(server_hello.strip(" \r\n"))
 
                 # Try to get my version
                 try:
@@ -57,7 +69,7 @@ class IGate:
                     version = 'GIT'
 
                 # Login
-                self.log.info("login %s (PyMultimonAPRS %s)" % (
+                self.logger.info("login %s (PyMultimonAPRS %s)" % (
                     self.callsign, version))
                 self.socket.send(
                     "user %s pass %s vers PyMultimonAPRS %s filter "
@@ -65,11 +77,12 @@ class IGate:
                         self.callsign, self.passcode, version))
 
                 server_return = self.socket.recv(1024)
-                self.log.info(server_return.strip(" \r\n"))
+                self.logger.info(server_return.strip(" \r\n"))
 
                 connected = True
             except socket.error as e:
-                self.log.warn("Error when connecting to server: '%s'" % str(e))
+                self.logger.warn(
+                    "Error when connecting to server: '%s'" % str(e))
                 time.sleep(1)
 
     def _disconnect(self):
@@ -83,7 +96,7 @@ class IGate:
         try:
             self._sending_queue.put(frame, True, 10)
         except Queue.Full:
-            self.log.warn(
+            self.logger.warn(
                 "Lost TX data (queue full): '%s'" % frame.export(False))
 
     def _socket_worker(self):
@@ -95,7 +108,7 @@ class IGate:
                 try:
                     # wait max 1sec for new data
                     frame = self._sending_queue.get(True, 1)
-                    self.log.debug("sending: %s" % frame.export(False))
+                    self.logger.debug("sending: %s" % frame.export(False))
                     raw_frame = "%s\r\n" % frame.export()
                     totalsent = 0
                     while totalsent < len(raw_frame):
@@ -125,8 +138,8 @@ class IGate:
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
-                self.log.warn("Connection issue: '%s'" % str(e))
+                self.logger.warn("Connection issue: '%s'" % str(e))
                 time.sleep(1)
                 # try to reconnect
                 self._connect()
-        self.log.debug("sending thread exit")
+        self.logger.debug("sending thread exit")
