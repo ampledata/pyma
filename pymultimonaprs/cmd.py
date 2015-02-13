@@ -16,11 +16,50 @@ import signal
 import sys
 import time
 
-
 from pymultimonaprs.multimon import Multimon
 from pymultimonaprs import beacon
 from pymultimonaprs.gate import IGate
 from pymultimonaprs.frame import APRSFrame, InvalidFrame
+
+
+def beacon_loop(igate, beacon_config):
+    bcargs = {
+        'lat': beacon_config['lat'],
+        'lng': beacon_config['lng'],
+        'callsign': igate.callsign,
+        'table': beacon_config['table'],
+        'symbol': beacon_config['symbol'],
+        'comment': beacon_config['comment'],
+        'ambiguity': beacon_config.get('ambiguity', 0),
+    }
+
+    bcargs_status = {
+        'callsign': igate.callsign,
+        'status': beacon_config['status'],
+    }
+
+    bcargs_weather = {
+        'callsign': igate.callsign,
+        'weather': beacon_config['weather'],
+    }
+
+    while 1:
+        # Position
+        frame = beacon.get_beacon_frame(**bcargs)
+        if frame:
+            igate.send(frame)
+
+        # Status
+        frame = beacon.get_status_frame(**bcargs_status)
+        if frame:
+            igate.send(frame)
+
+        # Weather
+        frame = beacon.get_weather_frame(**bcargs_weather)
+        if frame:
+            igate.send(frame)
+
+        time.sleep(beacon_config['send_every'])
 
 
 def main():
@@ -62,64 +101,27 @@ def main():
             frame.import_tnc2(tnc2_frame)
             if config['append_callsign']:
                 frame.path.extend([u'qAR', config['callsign']])
-            ig.send(frame)
+            igate.send(frame)
         except InvalidFrame:
             logger.info('Invalid Frame Received.')
             pass
 
-    def bc():
-        bcargs = {
-            'lat': config['beacon']['lat'],
-            'lng': config['beacon']['lng'],
-            'callsign': config['callsign'],
-            'table': config['beacon']['table'],
-            'symbol': config['beacon']['symbol'],
-            'comment': config['beacon']['comment'],
-            'ambiguity': config['beacon'].get('ambiguity', 0),
-        }
-        bcargs_status = {
-            'callsign': config['callsign'],
-            'status': config['beacon']['status'],
-        }
-        bcargs_weather = {
-            'callsign': config['callsign'],
-            'weather': config['beacon']['weather'],
-        }
-        while 1:
-            # Position
-            frame = beacon.get_beacon_frame(**bcargs)
-            if frame:
-                ig.send(frame)
-
-            # Status
-            frame = beacon.get_status_frame(**bcargs_status)
-            if frame:
-                ig.send(frame)
-
-            # Weather
-            frame = beacon.get_weather_frame(**bcargs_weather)
-            if frame:
-                ig.send(frame)
-
-            time.sleep(config['beacon']['send_every'])
-
     logger.info('Starting pymultimonaprs')
 
-    ig = IGate(config['callsign'], config['passcode'], config['gateway'])
+    igate = IGate(config['callsign'], config['passcode'], config['gateway'])
     mm = Multimon(mmcb, config)
 
     def signal_handler(signal, frame):
         logger.info('Stopping pymultimonaprs')
-        ig.exit()
+        igate.exit()
         mm.exit()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Start beacon in main thread
-    if config.get('beacon'):
-        bc()
+    if config.get('beacon') is not None:
+        beacon_loop(igate, config['beacon'])
 
 
 if __name__ == '__main__':

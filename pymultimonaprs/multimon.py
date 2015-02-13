@@ -47,9 +47,9 @@ class Multimon:
                 device_index = str(self.config['rtl'].get('device_index', 0))
 
                 if self.config['rtl'].get('offset_tuning') is not None:
-                    enable_option = offset
+                    enable_option = 'offset'
                 else:
-                    enable_option = none
+                    enable_option = 'none'
 
                 rtl_cmd = [
                     'rtl_fm',
@@ -62,7 +62,7 @@ class Multimon:
                     '-'
                 ]
                 self.log.debug('rtl_cmd=%s', rtl_cmd)
-                
+
                 proc_src = subprocess.Popen(
                     rtl_cmd, stdout=subprocess.PIPE, stderr=open('/dev/null'))
             elif self.config['source'] == 'alsa':
