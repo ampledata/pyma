@@ -13,6 +13,6 @@ __license__ = 'GNU General Public License, Version 3'
 import logging
 
 
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = ('%(asctime)s %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
               ' - %(message)s')
