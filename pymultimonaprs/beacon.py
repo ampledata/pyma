@@ -43,7 +43,7 @@ def encode_lng(lng):
     return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
 
 
-def mkframe(callsign, payload):
+def make_frame(callsign, payload):
     frame = APRSFrame()
     frame.source = callsign
     frame.dest = u'APRS'
@@ -57,7 +57,7 @@ def get_beacon_frame(lat, lng, callsign, table, symbol, comment, ambiguity):
     enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
     pos = "%s%s%s" % (enc_lat, table, enc_lng)
     payload = "=%s%s%s" % (pos, symbol, comment)
-    return mkframe(callsign, payload)
+    return make_frame(callsign, payload)
 
 
 def get_status_frame(callsign, status):
@@ -69,7 +69,7 @@ def get_status_frame(callsign, status):
         else:
             return None
         payload = ">%s" % status_text
-        return mkframe(callsign, payload)
+        return make_frame(callsign, payload)
     except:
         return None
 
@@ -123,6 +123,6 @@ def get_weather_frame(callsign, weather):
             wenc += "b%04d" % round(w['pressure'] * 10)
 
         payload = "_%sPyMM" % wenc
-        return mkframe(callsign, payload)
+        return make_frame(callsign, payload)
     except:
         return None

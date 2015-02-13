@@ -48,12 +48,16 @@ class Multimon(object):
 
     def _start(self):
         if self.config['source'] == 'pulse':
+            self.logger.debug('Using "pulse" as source.')
+
             proc_mm = subprocess.Popen(
                 ['multimon-ng', '-a', 'AFSK1200', '-A'],
                 stdout=subprocess.PIPE, stderr=open('/dev/null')
             )
         else:
             if self.config['source'] == 'rtl':
+                self.logger.debug('Using "rtl" as source.')
+
                 frequency = str(int(self.config['rtl']['freq'] * 1e6))
                 sample_rate = str(SAMPLE_RATE)
                 ppm = str(self.config['rtl']['ppm'])
@@ -80,29 +84,36 @@ class Multimon(object):
                 proc_src = subprocess.Popen(
                     rtl_cmd, stdout=subprocess.PIPE, stderr=open('/dev/null'))
             elif self.config['source'] == 'alsa':
+                self.logger.debug('Using "alsa" as source.')
+
+                alsa_device = self.config['alsa']['device']
+                sample_rate = str(SAMPLE_RATE)
+
+                alsa_cmd = [
+                    'arecord',
+                    '-D', alsa_device,
+                    '-r', sample_rate,
+                    '-f', 'S16_LE',
+                    '-t', 'raw',
+                    '-c', '1',
+                    '-'
+                ]
+                self.logger.debug('alsa_cmd=%s', alsa_cmd)
+
                 proc_src = subprocess.Popen(
-                    [
-                        'arecord',
-                        '-D',
-                        self.config['alsa']['device'],
-                        '-r',
-                        '22050',
-                        '-f',
-                        'S16_LE',
-                        '-t',
-                        'raw',
-                        '-c',
-                        '1',
-                        '-'
-                    ],
-                    stdout=subprocess.PIPE, stderr=open('/dev/null')
-                )
+                    alsa_cmd, stdout=subprocess.PIPE, stderr=open('/dev/null'))
+
+            mm_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
+            self.logger.debug('mm_cmd=%s', mm_cmd)
+
             proc_mm = subprocess.Popen(
-                ['multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-'],
+                mm_cmd,
                 stdin=proc_src.stdout,
-                stdout=subprocess.PIPE, stderr=open('/dev/null')
-            )
+                stdout=subprocess.PIPE,
+                stderr=open('/dev/null'))
+
             self.subprocs['src'] = proc_src
+
         self.subprocs['mm'] = proc_mm
 
     def _stop(self):
