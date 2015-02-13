@@ -12,7 +12,9 @@ import threading
 import subprocess
 import re
 
+
 START_FRAME_REX = re.compile(r'^APRS: (.*)')
+SAMPLE_RATE = 22050
 
 
 class Multimon:
@@ -38,25 +40,31 @@ class Multimon:
             )
         else:
             if self.config['source'] == 'rtl':
+                frequency = str(int(self.config['rtl']['freq'] * 1e6))
+                sample_rate = str(SAMPLE_RATE)
+                ppm = str(self.config['rtl']['ppm'])
+                gain = str(self.config['rtl']['gain'])
+                device_index = str(self.config['rtl'].get('device_index', 0))
+
+                if self.config['rtl'].get('offset_tuning') is not None:
+                    enable_option = offset
+                else:
+                    enable_option = none
+
+                rtl_cmd = [
+                    'rtl_fm',
+                    '-f', frequency,
+                    '-s', sample_rate,
+                    '-p', ppm,
+                    '-g', gain,
+                    '-E', enable_option,
+                    '-d', device_index,
+                    '-'
+                ]
+                self.log.debug('rtl_cmd=%s', rtl_cmd)
+                
                 proc_src = subprocess.Popen(
-                    [
-                        'rtl_fm',
-                        '-f',
-                        str(int(self.config['rtl']['freq'] * 1e6)),
-                        '-s',
-                        '22050',
-                        '-p',
-                        str(self.config['rtl']['ppm']),
-                        '-g',
-                        str(self.config['rtl']['gain']),
-                        '-E',
-                        'offset' if self.config['rtl'].get('offset_tuning', False) else 'none',
-                        '-d',
-                        str(self.config['rtl'].get('device_index', 0)),
-                        '-'
-                    ],
-                    stdout=subprocess.PIPE, stderr=open('/dev/null')
-                )
+                    rtl_cmd, stdout=subprocess.PIPE, stderr=open('/dev/null'))
             elif self.config['source'] == 'alsa':
                 proc_src = subprocess.Popen(
                     [

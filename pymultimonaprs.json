@@ -1,31 +1,31 @@
 {
-	"callsign": "DL0ABC-1",
-	"passcode": "12345",
-	"gateway": "euro.aprs2.net:14580",
-	"append_callsign": true,
-	"source": "rtl",
-	"rtl": {
-		"freq": 144.800,
-		"ppm": 0,
-		"gain": 0,
-		"offset_tuning": false,
-		"device_index": 0
-	},
-	"alsa": {
-		"device": "default"
-	},
-	"beacon": {
-		"lat": 51.00000,
-		"lng": 10.00000,
-		"table": "/",
-		"symbol": "&",
-		"comment": "PyMultimonAPRS iGate",
-		"status": {
-			"text": "Running on Raspberry Pi with RTL dongle",
-			"file": false
-		},
-		"weather": false,
-		"send_every": 300,
-		"ambiguity": 0
-	}
+    "callsign": "W2GMD-15",
+    "passcode": "12345",
+    "gateway": "noam.aprs2.net:14580",
+    "append_callsign": true,
+    "source": "rtl",
+    "rtl": {
+        "freq": 144.390,
+        "ppm": 4.384,
+        "gain": 0,
+        "offset_tuning": false,
+        "device_index": 0
+    },
+    "alsa": {
+        "device": "default"
+    },
+    "beacon": {
+        "lat": 51.00000,
+        "lng": 10.00000,
+        "table": "/",
+        "symbol": "&",
+        "comment": "PyMultimonAPRS iGate",
+        "status": {
+            "text": "Running on Creator CI20 MIPS with RTL dongle.",
+            "file": false
+        },
+        "weather": false,
+        "send_every": 3600,
+        "ambiguity": 0
+    }
 }
