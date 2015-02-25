@@ -64,7 +64,7 @@ class PostInstall(install):
 
 setup(
     name='pymultimonaprs',
-    version='1.0.0g',
+    version='2.0.0',
     license='GNU General Public License, Version 3',
     description='RF2APRS-IG Gateway',
     author='Greg Albrecht',
