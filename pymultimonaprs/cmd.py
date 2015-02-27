@@ -24,8 +24,8 @@ from pymultimonaprs.frame import APRSFrame, InvalidFrame
 
 def beacon_loop(igate, beacon_config):
     bcargs = {
-        'lat': beacon_config['lat'],
-        'lng': beacon_config['lng'],
+        'lat': float(beacon_config['lat']),
+        'lng': float(beacon_config['lng']),
         'callsign': igate.callsign,
         'table': beacon_config['table'],
         'symbol': beacon_config['symbol'],
