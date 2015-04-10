@@ -4,7 +4,7 @@
 """pymultimonaprs Package."""
 
 __author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
-__copyright__ = 'Copyright 2015 OnBeep, Inc.'
+__copyright__ = 'Copyright 2015 Orion Labs'
 __license__ = 'GNU General Public License, Version 3'
 
 
