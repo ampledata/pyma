@@ -12,6 +12,7 @@ import logging
 import logging.handlers
 import pkg_resources
 import Queue
+import random
 import socket
 import threading
 import time
@@ -131,6 +132,18 @@ class IGate(object):
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(1)
+            except Exception as ex:
+                # Catching Exception here, per:
+                #   https://github.com/ampledata/pymultimonaprs/issues/1
+                #
+                rand_sleep = random.randint(1, 20)
+                self.logger.warn(
+                    'Connection issue, sleeping for %ss: "%s"',
+                    rand_sleep, str(e))
+                time.sleep(rand_sleep)
+
+                # try to reconnect
+                self._connect()
             except IOError as e:
                 # Catching IOError here, in addition to socket.error, per:
                 #   https://github.com/ampledata/pymultimonaprs/issues/1
@@ -156,6 +169,7 @@ class IGate(object):
                 # [Errno 110] Connection time out
                 self.logger.warn("Connection issue: '%s'" % str(e))
                 time.sleep(1)
+
                 # try to reconnect
                 self._connect()
-        self.logger.debug("sending thread exit")
+        self.logger.debug('Sending thread exit.')
