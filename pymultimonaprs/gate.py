@@ -144,32 +144,5 @@ class IGate(object):
 
                 # try to reconnect
                 self._connect()
-            except IOError as e:
-                # Catching IOError here, in addition to socket.error, per:
-                #   https://github.com/ampledata/pymultimonaprs/issues/1
-                #
-                # Possible errors on IO:
-                #   [Errno  11] Buffer is empty
-                #     (maybe not when using blocking sockets)
-                #   [Errno  32] Broken Pipe
-                #   [Errno 104] Connection reset by peer
-                #   [Errno 110] Connection time out
-                #
-                self.logger.warn("Connection issue: '%s'" % str(e))
-                time.sleep(1)
 
-                # try to reconnect
-                self._connect()
-            except socket.error as e:
-                # possible errors on io:
-                # [Errno  11] Buffer is empty
-                #   (maybe not when using blocking sockets)
-                # [Errno  32] Broken Pipe
-                # [Errno 104] Connection reset by peer
-                # [Errno 110] Connection time out
-                self.logger.warn("Connection issue: '%s'" % str(e))
-                time.sleep(1)
-
-                # try to reconnect
-                self._connect()
         self.logger.debug('Sending thread exit.')
