@@ -11,10 +11,9 @@ import signal
 import sys
 import time
 
-from pymultimonaprs.multimon import Multimon
+import pymultimonaprs
+
 from pymultimonaprs import beacon
-from pymultimonaprs.gate import IGate
-from pymultimonaprs.frame import APRSFrame, InvalidFrame
 
 __author__ = 'Dominik Heidler <dominik@heidler.eu>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -96,7 +95,7 @@ def main():
 
     def mmcb(tnc2_frame):
         try:
-            frame = APRSFrame()
+            frame = pymultimonaprs.APRSFrame()
             frame.import_tnc2(tnc2_frame)
             if bool(config.get('append_callsign')):
                 frame.path.extend([u'qAR', config['callsign']])
@@ -111,25 +110,25 @@ def main():
             else:
                 igate.send(frame)
 
-        except InvalidFrame:
+        except pymultimonaprs.InvalidFrame:
             logger.info('Invalid Frame Received.')
             pass
 
     logger.info('Starting pymultimonaprs')
 
-    igate = IGate(
+    igate = pymultimonaprs.IGate(
         config['callsign'],
         config['passcode'],
         config['gateway'],
         config.get('preferred_protocol', 'any')
     )
 
-    mm = Multimon(mmcb, config)
+    multimon = pymultimonaprs.Multimon(mmcb, config)
 
     def signal_handler(signal, frame):
         logger.info('Stopping pymultimonaprs')
         igate.exit()
-        mm.exit()
+        multimon.exit()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
