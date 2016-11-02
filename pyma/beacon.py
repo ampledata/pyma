@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""pymultimonaprs Package."""
+"""PYMA Beacon functions."""
 
 import datetime
 import json
 import os
 
-from pymultimonaprs.frame import APRSFrame
+import pyma
 
-__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
@@ -43,7 +43,7 @@ def encode_lng(lng):
 
 
 def make_frame(callsign, payload):
-    frame = APRSFrame()
+    frame = pyma.APRSFrame()
     frame.source = callsign
     frame.dest = u'APRS'
     frame.path = [u'TCPIP*']

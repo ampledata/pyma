@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""pymultimonaprs Package."""
+"""PYMA Classes."""
 
 import errno
 import itertools
@@ -16,9 +16,9 @@ import subprocess
 import threading
 import time
 
-import pymultimonaprs.constants
+import pyma.constants
 
-__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
@@ -35,10 +35,10 @@ class APRSFrame(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+        _logger.setLevel(pyma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymultimonaprs.constants.LOG_FORMAT)
+        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -79,44 +79,62 @@ class APRSFrame(object):
 
 class IGate(object):
 
+    """PYMA IGate Class."""
+
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+        _logger.setLevel(pyma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymultimonaprs.constants.LOG_FORMAT)
+        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
     def __init__(self, callsign, passcode, gateways, preferred_protocol):
-        self.gateways = itertools.cycle(gateways)
         self.callsign = callsign
         self.passcode = passcode
+        self.gateways = itertools.cycle(gateways)
         self.preferred_protocol = preferred_protocol
+
         self.socket = None
+        self.server = ''
+        self.port = 0
+        self._running = True
+        self.connected = False
+
         self._sending_queue = Queue.Queue(maxsize=1)
         self._connect()
-        self._running = True
         self._worker = threading.Thread(target=self._socket_worker)
         self._worker.setDaemon(True)
         self._worker.start()
-        self.server = ''
-        self.port = 0
+        self._stop = threading.Event()
 
     def exit(self):
         self._running = False
         self._disconnect()
 
+    def stop(self):
+        """
+        Stop the thread at the next opportunity.
+        """
+        self._logger.info('Quitting because stop() was called.')
+        self._stop.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stop.isSet()
+
     def _connect(self):
-        connected = False
-        while not connected:
+        while not self.connected:
             try:
                 # Connect
                 gateway = next(self.gateways)
                 self.server, self.port = gateway.split(':')
                 self.port = int(self.port)
 
-                if self.preferred_protocol == 'ipv6'
+                if self.preferred_protocol == 'ipv6':
                     addrinfo = socket.getaddrinfo(
                         self.server, self.port, socket.AF_INET6)
                 elif self.preferred_protocol == 'ipv4':
@@ -126,8 +144,10 @@ class IGate(object):
                     addrinfo = socket.getaddrinfo(self.server, self.port)
 
                 self.socket = socket.socket(*addrinfo[0][0:3])
+
                 self._logger.info(
-                    "connecting... %s:%i" % (addrinfo[0][4], self.port))
+                    "Connecting to %s:%i" % (addrinfo[0][4][0], self.port))
+
                 self.socket.connect(addrinfo[0][4])
 
                 self._logger.info('Connected!')
@@ -138,22 +158,22 @@ class IGate(object):
                 # Try to get my version
                 try:
                     version = pkg_resources.get_distribution(
-                        'pymultimonaprs').version
+                        'pyma').version
                 except:
                     version = 'GIT'
 
                 # Login
-                self._logger.info("login %s (PyMultimonAPRS %s)" % (
+                self._logger.info("login %s (PYMA %s)" % (
                     self.callsign, version))
                 self.socket.send(
-                    "user %s pass %s vers PyMultimonAPRS %s filter "
+                    "user %s pass %s vers PYMA %s filter "
                     "r/38/-171/1\r\n" % (
                         self.callsign, self.passcode, version))
 
                 server_return = self.socket.recv(1024)
                 self._logger.info(server_return.strip(" \r\n"))
 
-                connected = True
+                self.connected = True
             except socket.error as ex:
                 self._logger.warn(
                     "Error when connecting to %s:%d: '%s'" %
@@ -235,19 +255,23 @@ class IGate(object):
 
 class Multimon(object):
 
+    """PYMA Multimon Class."""
+
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+        _logger.setLevel(pyma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymultimonaprs.constants.LOG_FORMAT)
+        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
     def __init__(self, frame_handler, config):
         self.frame_handler = frame_handler
         self.config = config
+
         self.subprocs = {}
+
         self._start()
         self._running = True
         self._worker = threading.Thread(target=self._mm_worker)
@@ -274,10 +298,10 @@ class Multimon(object):
             if self.config['source'] == 'rtl':
                 self._logger.debug('source=%s', self.config['source'])
 
-                sample_rate = str(pymultimonaprs.constants.SAMPLE_RATE)
+                sample_rate = str(pyma.constants.SAMPLE_RATE)
 
                 # Allow use of 'rx_fm' for Soapy/hackrf
-                rf_cmd = self.config['rtl'].get('command', 'rtl_fm')
+                rtl_cmd = self.config['rtl'].get('command', 'rtl_fm')
 
                 frequency = str(int(self.config['rtl']['freq'] * 1e6))
                 ppm = str(self.config['rtl']['ppm'])
@@ -300,14 +324,17 @@ class Multimon(object):
 
                 # 'rx_fm' support.
                 if device_index >= 0:
-                    rtl_args.extend('-d', str(device_index))
+                    rtl_args.extend(['-d', str(device_index)])
+                print locals()
+                _rtl_cmd = []
+                _rtl_cmd.extend([rtl_cmd])
+                _rtl_cmd.extend(rtl_args)
+                _rtl_cmd.extend(['-'])
 
-                rtl_cmd = [rf_cmd].extend(rtl_args).extend(['-'])
-
-                self._logger.debug('rtl_cmd=%s', rtl_cmd)
+                self._logger.debug('_rtl_cmd=%s', _rtl_cmd)
 
                 proc_src = subprocess.Popen(
-                    rtl_cmd,
+                    _rtl_cmd,
                     stdout=subprocess.PIPE,
                     stderr=open('/dev/null')
                 )
@@ -358,9 +385,7 @@ class Multimon(object):
 
     def _mm_worker(self):
         while self._running:
-            line = self.subprocs['mm'].stdout.readline()
-            line = line.strip()
-            m = pymultimonaprs.constants.START_FRAME_REX.match(line)
-            if m:
-                tnc2_frame = m.group(1)
-                self.frame_handler(tnc2_frame)
+            read_line = self.subprocs['mm'].stdout.readline().strip()
+            matched_line = START_FRAME_REX.match(read_line)
+            if matched_line:
+                self.frame_handler(matched_line.group(1))

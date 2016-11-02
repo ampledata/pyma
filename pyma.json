@@ -4,7 +4,7 @@
     "gateways": ["noam.aprs2.net:14580"],
     "append_callsign": true,
     "source": "rtl",
-    "preferred_protocol": "any",
+    "preferred_protocol": "ipv4",
     "rtl": {
         "freq": 144.390,
         "ppm": 4.384,

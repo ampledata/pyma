@@ -1,8 +1,8 @@
-# Makefile for pymultimonaprs.
+# Makefile for PYMA
 #
-# Source:: https://github.com/ampledata/pymultimonaprs
+# Source:: https://github.com/ampledata/pyma
 # Author:: Greg Albrecht W2GMD <oss@undef.net>
-# Copyright:: Copyright 2016 Orion Labs, Inc.
+# Copyright:: Copyright 2016 Dominik Heidler
 # License:: GNU General Public License, Version 3
 #
 
@@ -22,7 +22,7 @@ install:
 	python setup.py install
 
 uninstall:
-	pip uninstall -y pymultimonaprs
+	pip uninstall -y pyma
 
 clean:
 	@rm -rf *.egg* build dist *.py[oc] */*.py[co] cover doctest_pypi.cfg \
@@ -36,11 +36,11 @@ nosetests: remember
 	python setup.py nosetests
 
 pep8: remember
-	flake8 --max-complexity 12 --exit-zero pymultimonaprs/*.py tests/*.py
+	flake8 --max-complexity 12 --exit-zero pyma/*.py tests/*.py
 
 lint: remember
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		-r n pymultimonaprs/*.py tests/*.py || exit 0
+		-r n pyma/*.py tests/*.py || exit 0
 
 test: lint pep8 nosetests
 

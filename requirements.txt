@@ -1,10 +1,10 @@
-# Python Distribution Package Requirements for pymultimonaprs.
+# Python Distribution Package Requirements for PYMA.
 #
-# Source:: https://github.com/ampledata/pymultimonaprs
+# Source:: https://github.com/ampledata/pyma
 # Author:: Greg Albrecht W2GMD <oss@undef.net>
-# Copyright:: Copyright 2016 Orion Labs, Inc.
+# Copyright:: Copyright 2016 Dominik Heidler
 # License:: GNU General Public License, Version 3
 
 
-flake8==2.1.0
-pylint==1.2.1
+flake8
+pylint
