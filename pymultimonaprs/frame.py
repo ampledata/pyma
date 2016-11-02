@@ -3,16 +3,15 @@
 
 """pymultimonaprs Package."""
 
-__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
-__copyright__ = 'Copyright 2015 OnBeep, Inc.'
-__license__ = 'GNU General Public License, Version 3'
-
-
 import logging
 import logging.handlers
 import re
 
 import pymultimonaprs.constants
+
+__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__copyright__ = 'Copyright 2016 Dominik Heidler'
+__license__ = 'GNU General Public License, Version 3'
 
 
 HEADER_REX = re.compile(
@@ -25,14 +24,14 @@ class InvalidFrame(Exception):
 
 class APRSFrame(object):
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
-    formatter = logging.Formatter(pymultimonaprs.constants.LOG_FORMAT)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.propagate = False
+    _logger = logging.getLogger(__name__)
+    if not _logger.handlers:
+        _logger.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+        _console_handler = logging.StreamHandler()
+        _console_handler.setLevel(pymultimonaprs.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pymultimonaprs.constants.LOG_FORMAT)
+        _logger.addHandler(_console_handler)
+        _logger.propagate = False
 
     def __init__(self):
         self.source = None

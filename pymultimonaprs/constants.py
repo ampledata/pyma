@@ -5,14 +5,18 @@
 Constants for pymultimonaprs Module.
 """
 
-__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
-__copyright__ = 'Copyright 2015 OnBeep, Inc.'
+import logging
+import re
+
+__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-import logging
-
-
 LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = ('%(asctime)s %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
-              ' - %(message)s')
+LOG_FORMAT = logging.Formatter(
+    '%(asctime)s pymultimonaprs %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
+    ' - %(message)s')
+
+START_FRAME_REX = re.compile(r'^APRS: (.*)')
+SAMPLE_RATE = 22050

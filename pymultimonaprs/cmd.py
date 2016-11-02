@@ -3,11 +3,6 @@
 
 """pymultimonaprs Package."""
 
-__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
-__copyright__ = 'Copyright 2015 OnBeep, Inc.'
-__license__ = 'GNU General Public License, Version 3'
-
-
 import argparse
 import json
 import logging
@@ -20,6 +15,10 @@ from pymultimonaprs.multimon import Multimon
 from pymultimonaprs import beacon
 from pymultimonaprs.gate import IGate
 from pymultimonaprs.frame import APRSFrame, InvalidFrame
+
+__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__copyright__ = 'Copyright 2016 Dominik Heidler'
+__license__ = 'GNU General Public License, Version 3'
 
 
 def beacon_loop(igate, beacon_config):
@@ -99,16 +98,32 @@ def main():
         try:
             frame = APRSFrame()
             frame.import_tnc2(tnc2_frame)
-            if config['append_callsign']:
+            if bool(config.get('append_callsign')):
                 frame.path.extend([u'qAR', config['callsign']])
-            igate.send(frame)
+
+            # Filter packets from TCP2RF gateways
+            reject_paths = set(['TCPIP', 'TCPIP*', 'NOGATE', 'RFONLY'])
+            # '}' is the Third-Party Data Type Identifier (used to encapsulate
+            # pkgs) indicating traffic from the internet
+            if (len(reject_paths.intersection(frame.path)) > 0 or
+                    frame.payload.startswith('}')):
+                logger.debug('Rejected: %s', frame.export(False))
+            else:
+                igate.send(frame)
+
         except InvalidFrame:
             logger.info('Invalid Frame Received.')
             pass
 
     logger.info('Starting pymultimonaprs')
 
-    igate = IGate(config['callsign'], config['passcode'], config['gateway'])
+    igate = IGate(
+        config['callsign'],
+        config['passcode'],
+        config['gateway'],
+        config.get('preferred_protocol', 'any')
+    )
+
     mm = Multimon(mmcb, config)
 
     def signal_handler(signal, frame):

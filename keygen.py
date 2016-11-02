@@ -1,5 +1,9 @@
 #!/usr/bin/python2
 
+__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__copyright__ = 'Copyright 2016 Dominik Heidler'
+__license__ = 'GNU General Public License, Version 3'
+
 import sys
 
 def generate(callsign):

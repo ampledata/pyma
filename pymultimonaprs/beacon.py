@@ -3,16 +3,15 @@
 
 """pymultimonaprs Package."""
 
-__author__ = 'Greg Albrecht W2GMD <gba@gregalbrecht.com>'
-__copyright__ = 'Copyright 2015 OnBeep, Inc.'
-__license__ = 'GNU General Public License, Version 3'
-
-
 import datetime
 import json
 import os
 
 from pymultimonaprs.frame import APRSFrame
+
+__author__ = 'Dominik Heidler <dominik@heidler.eu>'
+__copyright__ = 'Copyright 2016 Dominik Heidler'
+__license__ = 'GNU General Public License, Version 3'
 
 
 def process_ambiguity(pos, ambiguity):
@@ -106,6 +105,26 @@ def get_weather_frame(callsign, weather):
             wenc += "t%03d" % round(w['temperature'] / (float(5)/9) + 32)
         else:
             wenc += "t..."
+
+        # Rain
+        rain = w.get('rain', {})
+        if 'rainlast1h' in rain:
+            si = round(rain['rainlast1h'] / 25.4)
+            wenc += "r%03d" % si
+        else:
+            wenc += "r..."
+
+        if 'rainlast24h' in rain:
+            si = round(rain['rainlast24h'] / 25.4)
+            wenc += "p%03d" % si
+        else:
+            wenc += "p..."
+
+        if 'rainmidnight' in rain:
+            si = round(rain['rainmidnight'] / 25.4)
+            wenc += "P%03d" % si
+        else:
+            wenc += "P..."
 
         # Humidity
         if 'humidity' in w:
