@@ -114,6 +114,16 @@ def cli():
 
     if config.get('beacon') is not None:
         beacon_loop(igate, config['beacon'])
+    else:
+        try:
+            while igate._running and multimon._running:
+                time.sleep(0.01)
+        except KeyboardInterrupt:
+            igate.exit()
+            multimon._stop()
+        finally:
+            igate.exit()
+            multimon._stop()
 
 
 if __name__ == '__main__':

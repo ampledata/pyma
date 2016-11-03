@@ -99,32 +99,20 @@ class IGate(object):
         self.socket = None
         self.server = ''
         self.port = 0
-        self._running = True
         self.connected = False
 
         self._sending_queue = Queue.Queue(maxsize=1)
         self._connect()
+
+        self._running = True
+
         self._worker = threading.Thread(target=self._socket_worker)
         self._worker.setDaemon(True)
         self._worker.start()
-        self._stop = threading.Event()
 
     def exit(self):
         self._running = False
         self._disconnect()
-
-    def stop(self):
-        """
-        Stop the thread at the next opportunity.
-        """
-        self._logger.info('Quitting because stop() was called.')
-        self._stop.set()
-
-    def stopped(self):
-        """
-        Checks if the thread is stopped.
-        """
-        return self._stop.isSet()
 
     def _connect(self):
         while not self.connected:
