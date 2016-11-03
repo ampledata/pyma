@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""PYMA Constats."""
+"""PYMMA Constats."""
 
 import logging
 import re
@@ -13,7 +13,7 @@ __license__ = 'GNU General Public License, Version 3'
 
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter(
-    '%(asctime)s PYMA %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
+    '%(asctime)s PYMMA %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
     ' - %(message)s')
 
 START_FRAME_REX = re.compile(r'^APRS: (.*)')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""PYMA Commands"""
+"""PYMMA Commands"""
 
 import argparse
 import json
@@ -11,8 +11,8 @@ import signal
 import sys
 import time
 
-import pyma
-import pyma.beacon
+import pymma
+import pymma.beacon
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -42,17 +42,17 @@ def beacon_loop(igate, beacon_config):
 
     while 1:
         # Position
-        frame = pyma.beacon.get_beacon_frame(**bcargs)
+        frame = pymma.beacon.get_beacon_frame(**bcargs)
         if frame:
             igate.send(frame)
 
         # Status
-        frame = pyma.beacon.get_status_frame(**bcargs_status)
+        frame = pymma.beacon.get_status_frame(**bcargs_status)
         if frame:
             igate.send(frame)
 
         # Weather
-        frame = pyma.beacon.get_weather_frame(**bcargs_weather)
+        frame = pymma.beacon.get_weather_frame(**bcargs_weather)
         if frame:
             igate.send(frame)
 
@@ -60,11 +60,11 @@ def beacon_loop(igate, beacon_config):
 
 
 def cli():
-    parser = argparse.ArgumentParser(description='PYMA')
+    parser = argparse.ArgumentParser(description='PYMMA')
 
     parser.add_argument(
         '-c', dest='config',
-        default='pyma.json',
+        default='pymma.json',
         help='Use this config file')
     args = parser.parse_args()
 
@@ -73,7 +73,7 @@ def cli():
 
     def mmcb(tnc2_frame):
         try:
-            frame = pyma.APRSFrame()
+            frame = pymma.APRSFrame()
             frame.import_tnc2(tnc2_frame)
             if bool(config.get('append_callsign')):
                 frame.path.extend([u'qAR', config['callsign']])
@@ -88,23 +88,23 @@ def cli():
             else:
                 igate.send(frame)
 
-        except pyma.InvalidFrame:
+        except pymma.InvalidFrame:
             print 'Invalid Frame Received.'
             pass
 
-    print 'Starting PYMA...'
+    print 'Starting PYMMA...'
 
-    igate = pyma.IGate(
+    igate = pymma.IGate(
         config['callsign'],
         config['passcode'],
         config['gateways'],
         config.get('preferred_protocol', 'any')
     )
 
-    multimon = pyma.Multimon(mmcb, config)
+    multimon = pymma.Multimon(mmcb, config)
 
     def signal_handler(signal, frame):
-        print 'Stopping PYMA.'
+        print 'Stopping PYMMA.'
         igate.exit()
         mm.exit()
         sys.exit(0)

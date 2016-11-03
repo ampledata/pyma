@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""PYMA Classes."""
+"""PYMMA Classes."""
 
 import errno
 import itertools
@@ -16,7 +16,7 @@ import subprocess
 import threading
 import time
 
-import pyma.constants
+import pymma.constants
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -35,10 +35,10 @@ class APRSFrame(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pyma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -79,14 +79,14 @@ class APRSFrame(object):
 
 class IGate(object):
 
-    """PYMA IGate Class."""
+    """PYMMA IGate Class."""
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pyma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -158,15 +158,15 @@ class IGate(object):
                 # Try to get my version
                 try:
                     version = pkg_resources.get_distribution(
-                        'pyma').version
+                        'pymma').version
                 except:
                     version = 'GIT'
 
                 # Login
-                self._logger.info("login %s (PYMA %s)" % (
+                self._logger.info("login %s (PYMMA %s)" % (
                     self.callsign, version))
                 self.socket.send(
-                    "user %s pass %s vers PYMA %s filter "
+                    "user %s pass %s vers PYMMA %s filter "
                     "r/38/-171/1\r\n" % (
                         self.callsign, self.passcode, version))
 
@@ -255,14 +255,14 @@ class IGate(object):
 
 class Multimon(object):
 
-    """PYMA Multimon Class."""
+    """PYMMA Multimon Class."""
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pyma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.constants.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pyma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pyma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -298,7 +298,7 @@ class Multimon(object):
             if self.config['source'] == 'rtl':
                 self._logger.debug('source=%s', self.config['source'])
 
-                sample_rate = str(pyma.constants.SAMPLE_RATE)
+                sample_rate = str(pymma.constants.SAMPLE_RATE)
 
                 # Allow use of 'rx_fm' for Soapy/hackrf
                 rtl_cmd = self.config['rtl'].get('command', 'rtl_fm')
@@ -325,7 +325,7 @@ class Multimon(object):
                 # 'rx_fm' support.
                 if device_index >= 0:
                     rtl_args.extend(['-d', str(device_index)])
-                print locals()
+
                 _rtl_cmd = []
                 _rtl_cmd.extend([rtl_cmd])
                 _rtl_cmd.extend(rtl_args)

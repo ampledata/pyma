@@ -1,6 +1,6 @@
-# Makefile for PYMA
+# Makefile for PYMMA
 #
-# Source:: https://github.com/ampledata/pyma
+# Source:: https://github.com/ampledata/pymma
 # Author:: Greg Albrecht W2GMD <oss@undef.net>
 # Copyright:: Copyright 2016 Dominik Heidler
 # License:: GNU General Public License, Version 3
@@ -22,7 +22,7 @@ install:
 	python setup.py install
 
 uninstall:
-	pip uninstall -y pyma
+	pip uninstall -y pymma
 
 clean:
 	@rm -rf *.egg* build dist *.py[oc] */*.py[co] cover doctest_pypi.cfg \
@@ -36,11 +36,11 @@ nosetests: remember
 	python setup.py nosetests
 
 pep8: remember
-	flake8 --max-complexity 12 --exit-zero pyma/*.py tests/*.py
+	flake8 --max-complexity 12 --exit-zero pymma/*.py tests/*.py
 
 lint: remember
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		-r n pyma/*.py tests/*.py || exit 0
+		-r n pymma/*.py tests/*.py || exit 0
 
 test: lint pep8 nosetests
 

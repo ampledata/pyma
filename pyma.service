@@ -1,9 +1,9 @@
 [Unit]
-Description=PYMA
+Description=PYMMA
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/pyma --syslog
+ExecStart=/usr/bin/pymma --syslog
 
 [Install]
 WantedBy=multi-user.target

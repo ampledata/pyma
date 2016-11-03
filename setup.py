@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""PYMA Package."""
+"""PYMMA Package."""
 
 import setuptools
 
@@ -11,17 +11,17 @@ __license__ = 'GNU General Public License, Version 3'
 
 
 setuptools.setup(
-    name='pyma',
+    name='pymma',
     version='0.0.1b1',
     license='GNU General Public License, Version 3',
     description='Python APRS Gateway',
     author='Greg Albrecht',
     author_email='oss@undef.net',
-    url='http://github.com/ampledata/pyma',
-    packages=['pyma'],
+    url='http://github.com/ampledata/pymma',
+    packages=['pymma'],
     entry_points={
         'console_scripts': [
-            'pyma = pyma.cmd:cli'
+            'pymma = pymma.cmd:cli'
         ]
     },
     zip_safe=False,

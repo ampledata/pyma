@@ -1,6 +1,6 @@
-# Python Distribution Package Requirements for PYMA.
+# Python Distribution Package Requirements for PYMMA.
 #
-# Source:: https://github.com/ampledata/pyma
+# Source:: https://github.com/ampledata/pymma
 # Author:: Greg Albrecht W2GMD <oss@undef.net>
 # Copyright:: Copyright 2016 Dominik Heidler
 # License:: GNU General Public License, Version 3

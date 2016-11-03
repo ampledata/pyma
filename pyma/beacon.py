@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""PYMA Beacon functions."""
+"""PYMMA Beacon functions."""
 
 import datetime
 import json
 import os
 
-import pyma
+import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -43,7 +43,7 @@ def encode_lng(lng):
 
 
 def make_frame(callsign, payload):
-    frame = pyma.APRSFrame()
+    frame = pymma.APRSFrame()
     frame.source = callsign
     frame.dest = u'APRS'
     frame.path = [u'TCPIP*']
