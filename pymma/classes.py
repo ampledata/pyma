@@ -23,10 +23,6 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-HEADER_REX = re.compile(
-    r'^(?P<source>\w*(-\d{1,2})?)>(?P<dest>\w*(-\d{1,2})?),(?P<path>[^\s]*)')
-
-
 class InvalidFrame(Exception):
     pass
 
@@ -58,7 +54,7 @@ class APRSFrame(object):
         payload = payload.strip()
 
         try:
-            res = HEADER_REX.match(header).groupdict()
+            res = pymma.constants.HEADER_REX.match(header).groupdict()
             self.source = res['source']
             self.dest = res['dest']
             self.path = res['path'].split(',')
@@ -374,6 +370,6 @@ class Multimon(object):
     def _mm_worker(self):
         while self._running:
             read_line = self.subprocs['mm'].stdout.readline().strip()
-            matched_line = START_FRAME_REX.match(read_line)
+            matched_line = pymma.constants.START_FRAME_REX.match(read_line)
             if matched_line:
                 self.frame_handler(matched_line.group(1))
