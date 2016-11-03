@@ -5,8 +5,6 @@
 
 import argparse
 import json
-import signal
-import sys
 import time
 
 import pymma
@@ -101,16 +99,7 @@ def cli():
 
     multimon = pymma.Multimon(mmcb, config)
 
-    def signal_handler(signal, frame):
-        print 'Stopping PYMMA.'
-        igate.exit()
-        multimon.exit()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    if config.get('beacon') is not None:
+    if config.get('beacon'):
         beacon_loop(igate, config['beacon'])
     else:
         try:
@@ -118,10 +107,10 @@ def cli():
                 time.sleep(0.01)
         except KeyboardInterrupt:
             igate.exit()
-            multimon._stop()
+            multimon.exit()
         finally:
             igate.exit()
-            multimon._stop()
+            multimon.exit()
 
 
 if __name__ == '__main__':
