@@ -5,8 +5,6 @@
 
 import argparse
 import json
-import logging
-import logging.handlers
 import signal
 import sys
 import time
@@ -106,7 +104,7 @@ def cli():
     def signal_handler(signal, frame):
         print 'Stopping PYMMA.'
         igate.exit()
-        mm.exit()
+        multimon.exit()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
