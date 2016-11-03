@@ -21,3 +21,6 @@ SAMPLE_RATE = 22050
 
 HEADER_REX = re.compile(
     r'^(?P<source>\w*(-\d{1,2})?)>(?P<dest>\w*(-\d{1,2})?),(?P<path>[^\s]*)')
+
+# Filter packets from TCP2RF gateways
+REJECT_PATHS = set(['TCPIP', 'TCPIP*', 'NOGATE', 'RFONLY'])

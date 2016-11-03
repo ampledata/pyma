@@ -5,6 +5,7 @@
 
 import argparse
 import json
+import Queue
 import time
 
 import pymma
@@ -67,37 +68,21 @@ def cli():
     with open(args.config) as config_file:
         config = json.load(config_file)
 
-    def mmcb(tnc2_frame):
-        try:
-            frame = pymma.APRSFrame()
-            frame.import_tnc2(tnc2_frame)
-            if bool(config.get('append_callsign')):
-                frame.path.extend([u'qAR', config['callsign']])
-
-            # Filter packets from TCP2RF gateways
-            reject_paths = set(['TCPIP', 'TCPIP*', 'NOGATE', 'RFONLY'])
-            # '}' is the Third-Party Data Type Identifier (used to encapsulate
-            # pkgs) indicating traffic from the internet
-            if (len(reject_paths.intersection(frame.path)) > 0 or
-                    frame.payload.startswith('}')):
-                print 'Rejected: %s' % frame.export(False)
-            else:
-                igate.send(frame)
-
-        except pymma.InvalidFrame:
-            print 'Invalid Frame Received.'
-            pass
-
     print 'Starting PYMMA...'
 
+    frame_queue = Queue.Queue(maxsize=1)
+
     igate = pymma.IGate(
+        frame_queue=frame_queue,
         config['callsign'],
         config['passcode'],
         config['gateways'],
-        config.get('preferred_protocol', 'any')
+        config.get('proto', 'any')
     )
 
-    multimon = pymma.Multimon(mmcb, config)
+    multimon = pymma.Multimon(frame_queue, config)
+
+    frame_queue.join()
 
     if config.get('beacon'):
         beacon_loop(igate, config['beacon'])

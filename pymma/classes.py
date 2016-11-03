@@ -86,18 +86,18 @@ class IGate(object):
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, callsign, passcode, gateways, preferred_protocol):
+    def __init__(self, frame_queue, callsign, passcode, gateways, proto):
+        self.frame_queue = frame_queue
         self.callsign = callsign
         self.passcode = passcode
         self.gateways = itertools.cycle(gateways)
-        self.preferred_protocol = preferred_protocol
+        self.proto = proto
 
         self.socket = None
         self.server = ''
         self.port = 0
         self.connected = False
 
-        self._sending_queue = Queue.Queue(maxsize=1)
         self._connect()
 
         self._running = True
@@ -118,10 +118,10 @@ class IGate(object):
                 self.server, self.port = gateway.split(':')
                 self.port = int(self.port)
 
-                if self.preferred_protocol == 'ipv6':
+                if self.proto == 'ipv6':
                     addrinfo = socket.getaddrinfo(
                         self.server, self.port, socket.AF_INET6)
-                elif self.preferred_protocol == 'ipv4':
+                elif self.proto == 'ipv4':
                     addrinfo = socket.getaddrinfo(
                         self.server, self.port, socket.AF_INET)
                 else:
@@ -173,7 +173,7 @@ class IGate(object):
     def send(self, frame):
         try:
             # wait 10sec for queue slot, then drop the data
-            self._sending_queue.put(frame, True, 10)
+            self.frame_queue.put(frame, True, 10)
         except Queue.Full:
             self._logger.warn(
                 "Lost TX data (queue full): '%s'" % frame.export(False))
@@ -186,8 +186,8 @@ class IGate(object):
             try:
                 try:
                     # wait max 1sec for new data
-                    frame = self._sending_queue.get(True, 1)
-                    self._logger.debug("sending: %s" % frame.export(False))
+                    frame = self.frame_queue.get(True, 1)
+                    self._logger.debug("Sending: %s" % frame.export(False))
                     raw_frame = "%s\r\n" % frame.export()
                     totalsent = 0
                     while totalsent < len(raw_frame):
@@ -250,8 +250,8 @@ class Multimon(object):
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_handler, config):
-        self.frame_handler = frame_handler
+    def __init__(self, frame_queue, config):
+        self.frame_queue = frame_queue
         self.config = config
 
         self.subprocs = {}
@@ -372,4 +372,29 @@ class Multimon(object):
             read_line = self.subprocs['mm'].stdout.readline().strip()
             matched_line = pymma.constants.START_FRAME_REX.match(read_line)
             if matched_line:
-                self.frame_handler(matched_line.group(1))
+                self.handle_frame(matched_line.group(1))
+
+    def handle_frame(self, tnc2_frame):
+        try:
+            frame = APRSFrame()
+            frame.import_tnc2(tnc2_frame)
+
+            if bool(self.config.get('append_callsign')):
+                frame.path.extend([u'qAR', self.config['callsign']])
+
+
+            if pymma.constants.REJECT_PATHS.intersection(frame.path):
+                self._logger.info(
+                    'Rejected frame with REJECTED_PATH: %s',
+                    frame.export(False))
+            elif frame.payload.startswith('}'):
+                # '}' is the Third-Party Data Type Identifier (used to
+                # encapsulate packets) indicating traffic from the Internet.
+                self._logger.info(
+                    'Rejected frame from the Internet: %s',
+                    frame.export(False))
+            else:
+                self.frame_queue.put(frame, True, 10)
+                
+        except pymma.InvalidFrame:
+            self._logger.info('Invalid Frame Received')
