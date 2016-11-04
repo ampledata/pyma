@@ -59,7 +59,7 @@ class APRSFrame(object):
             self.dest = res['dest']
             self.path = res['path'].split(',')
         except:
-            raise InvalidFrame()
+            self._logger.info('Invalid Frame: %s', tnc2_frame)
 
         self.payload = payload
 
