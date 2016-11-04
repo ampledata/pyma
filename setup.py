@@ -12,7 +12,7 @@ __license__ = 'GNU General Public License, Version 3'
 
 setuptools.setup(
     name='pymma',
-    version='0.0.1b1',
+    version='1.0.0',
     license='GNU General Public License, Version 3',
     description='Python APRS Gateway',
     author='Greg Albrecht',
