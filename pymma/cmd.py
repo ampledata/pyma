@@ -73,7 +73,7 @@ def cli():
     frame_queue = Queue.Queue(maxsize=1)
 
     igate = pymma.IGate(
-        frame_queue=frame_queue,
+        frame_queue,
         config['callsign'],
         config['passcode'],
         config['gateways'],
@@ -82,12 +82,12 @@ def cli():
 
     multimon = pymma.Multimon(frame_queue, config)
 
-    frame_queue.join()
-
     if config.get('beacon'):
         beacon_loop(igate, config['beacon'])
     else:
         try:
+            frame_queue.join()
+
             while igate._running and multimon._running:
                 time.sleep(0.01)
         except KeyboardInterrupt:

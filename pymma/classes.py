@@ -395,6 +395,6 @@ class Multimon(object):
                     frame.export(False))
             else:
                 self.frame_queue.put(frame, True, 10)
-                
+
         except pymma.InvalidFrame:
             self._logger.info('Invalid Frame Received')
