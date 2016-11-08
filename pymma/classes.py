@@ -358,26 +358,30 @@ class Multimon(object):
                 self.handle_frame(matched_line.group(1))
 
     def handle_frame(self, tnc2_frame):
-        try:
-            frame = APRSFrame()
-            frame.import_tnc2(tnc2_frame)
+        if self.config.get('new_decoder') is not None:
+            import aprs.util
+            aprs_frame = aprs.util.decode_aprs_ascii_frame(tnc2_frame)
+            self._logger.debug('aprs_frame=%s', aprs_frame)
+        else:
+            try:
+                frame = APRSFrame()
+                frame.import_tnc2(tnc2_frame)
 
-            if bool(self.config.get('append_callsign')):
-                frame.path.extend([u'qAR', self.config['callsign']])
+                if bool(self.config.get('append_callsign')):
+                    frame.path.extend([u'qAR', self.config['callsign']])
 
+                if pymma.constants.REJECT_PATHS.intersection(frame.path):
+                    self._logger.info(
+                        'Rejected frame with REJECTED_PATH: %s',
+                        frame.export(False))
+                elif frame.payload.startswith('}'):
+                    # '}' is the Third-Party Data Type Identifier (used to
+                    # encapsulate packets) indicating traffic from the Internet.
+                    self._logger.info(
+                        'Rejected frame from the Internet: %s',
+                        frame.export(False))
+                else:
+                    self.frame_queue.put(frame, True, 10)
 
-            if pymma.constants.REJECT_PATHS.intersection(frame.path):
-                self._logger.info(
-                    'Rejected frame with REJECTED_PATH: %s',
-                    frame.export(False))
-            elif frame.payload.startswith('}'):
-                # '}' is the Third-Party Data Type Identifier (used to
-                # encapsulate packets) indicating traffic from the Internet.
-                self._logger.info(
-                    'Rejected frame from the Internet: %s',
-                    frame.export(False))
-            else:
-                self.frame_queue.put(frame, True, 10)
-
-        except pymma.InvalidFrame:
-            self._logger.info('Invalid Frame Received')
+            except pymma.InvalidFrame:
+                self._logger.info('Invalid Frame Received')
