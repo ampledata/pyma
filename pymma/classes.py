@@ -258,7 +258,7 @@ class Multimon(object):
 
         self._start()
         self._running = True
-        self._worker = threading.Thread(target=self._mm_worker)
+        self._worker = threading.Thread(target=self._multimon_worker)
         self._worker.setDaemon(True)
         self._worker.start()
 

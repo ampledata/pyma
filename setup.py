@@ -24,6 +24,7 @@ setuptools.setup(
             'pymma = pymma.cmd:cli'
         ]
     },
+    install_requires=['aprs'],
     zip_safe=False,
     include_package_data=True
 )
