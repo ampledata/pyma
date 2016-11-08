@@ -254,7 +254,7 @@ class Multimon(object):
         self.frame_queue = frame_queue
         self.config = config
 
-        self.subprocs = {}
+        self.processes = {}
 
         self._start()
         self._running = True
@@ -267,69 +267,48 @@ class Multimon(object):
         self._stop()
 
     def _start(self):
+        self._logger.debug('source=%s', self.config['source'])
+
         if self.config['source'] == 'pulse':
-            self._logger.debug('source=%s', self.config['source'])
-
             multimon_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A']
-            self._logger.debug('multimon_cmd=%s', multimon_cmd)
 
-            proc_mm = subprocess.Popen(
+            multimon_proc = subprocess.Popen(
                 multimon_cmd,
                 stdout=subprocess.PIPE,
                 stderr=open('/dev/null')
             )
         else:
+            sample_rate = str(pymma.constants.SAMPLE_RATE)
+
             if self.config['source'] == 'rtl':
-                self._logger.debug('source=%s', self.config['source'])
-
-                sample_rate = str(pymma.constants.SAMPLE_RATE)
-
-                # Allow use of 'rx_fm' for Soapy/hackrf
+                # Allow use of 'rx_fm' for Soapy/HackRF
                 rtl_cmd = self.config['rtl'].get('command', 'rtl_fm')
 
                 frequency = str(int(self.config['rtl']['freq'] * 1e6))
                 ppm = str(self.config['rtl']['ppm'])
                 gain = str(self.config['rtl']['gain'])
 
-                device_index = int(self.config['rtl'].get('device_index', 0))
+                device_index = str(self.config['rtl'].get('device_index', '0'))
 
                 if self.config['rtl'].get('offset_tuning') is not None:
                     enable_option = 'offset'
                 else:
                     enable_option = 'none'
 
-                rtl_args = [
+                src_cmd = [
+                    rtl_cmd,
                     '-f', frequency,
                     '-s', sample_rate,
                     '-p', ppm,
                     '-g', gain,
-                    '-E', enable_option
+                    '-E', enable_option,
+                    '-d', device_index,
+                    '-'
                 ]
-
-                # 'rx_fm' support.
-                if device_index >= 0:
-                    rtl_args.extend(['-d', str(device_index)])
-
-                _rtl_cmd = []
-                _rtl_cmd.extend([rtl_cmd])
-                _rtl_cmd.extend(rtl_args)
-                _rtl_cmd.extend(['-'])
-
-                self._logger.debug('_rtl_cmd=%s', _rtl_cmd)
-
-                proc_src = subprocess.Popen(
-                    _rtl_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=open('/dev/null')
-                )
-
             elif self.config['source'] == 'alsa':
-                self._logger.debug('source=%s', self.config['source'])
-
                 alsa_device = self.config['alsa']['device']
-                sample_rate = str(SAMPLE_RATE)
 
-                alsa_cmd = [
+                src_cmd = [
                     'arecord',
                     '-D', alsa_device,
                     '-r', sample_rate,
@@ -338,38 +317,42 @@ class Multimon(object):
                     '-c', '1',
                     '-'
                 ]
-                self._logger.debug('alsa_cmd=%s', alsa_cmd)
 
-                proc_src = subprocess.Popen(
-                    alsa_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=open('/dev/null')
-                )
+            self._logger.debug('src_cmd="%s"', ' '.join(src_cmd))
 
-            mm_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
-            self._logger.debug('mm_cmd=%s', mm_cmd)
+            src_proc = subprocess.Popen(
+                src_cmd,
+                stdout=subprocess.PIPE,
+                stderr=open('/dev/null')
+            )
 
-            proc_mm = subprocess.Popen(
-                mm_cmd,
-                stdin=proc_src.stdout,
+            multimon_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
+            self._logger.debug('multimon_cmd="%s"', ' '.join(multimon_cmd))
+
+            multimon_proc = subprocess.Popen(
+                multimon_cmd,
+                stdin=src_proc.stdout,
                 stdout=subprocess.PIPE,
                 stderr=open('/dev/null'))
 
-            self.subprocs['src'] = proc_src
+            self.processes['src'] = src_proc
 
-        self.subprocs['mm'] = proc_mm
+        self.processes['multimon'] = multimon_proc
 
     def _stop(self):
-        for name in ['mm', 'src']:
+        for name in ['multimon', 'src']:
             try:
-                proc = self.subprocs[name]
+                proc = self.processes[name]
                 proc.terminate()
-            except:
+            except Exception as ex:
+                self._logger.exception(
+                    'Raised Exception while trying to terminate %s: %s',
+                    name, ex)
                 pass
 
-    def _mm_worker(self):
+    def _multimon_worker(self):
         while self._running:
-            read_line = self.subprocs['mm'].stdout.readline().strip()
+            read_line = self.processes['multimon'].stdout.readline().strip()
             matched_line = pymma.constants.START_FRAME_REX.match(read_line)
             if matched_line:
                 self.handle_frame(matched_line.group(1))
