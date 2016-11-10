@@ -363,6 +363,21 @@ class Multimon(object):
         if self.config.get('new_decoder') is not None:
             aprs_frame = aprs.decode_aprs_ascii_frame(tnc2_frame)
             self._logger.debug('aprs_frame=%s', aprs_frame)
+
+            if bool(self.config.get('append_callsign')):
+                aprs_frame['path'].extend([u'qAR', self.config['callsign']])
+
+            if pymma.constants.REJECT_PATHS.intersection(aprs_frame['path']):
+                self._logger.info(
+                    'Rejected frame with REJECTED_PATH: %s', aprs_frame)
+            elif aprs_frame['text'].startswith('}'):
+                # '}' is the Third-Party Data Type Identifier (used to
+                # encapsulate packets) indicating traffic from the Internet.
+                self._logger.info(
+                    'Rejected frame from the Internet: %s', aprs_frame)
+            else:
+                self._logger.debug('PUT "%s"', aprs_frame)
+                #self.frame_queue.put(aprs_frame, True, 10)
         else:
             try:
                 frame = APRSFrame()
