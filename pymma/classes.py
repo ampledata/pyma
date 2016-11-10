@@ -16,6 +16,8 @@ import subprocess
 import threading
 import time
 
+import aprs
+
 import pymma.constants
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
@@ -359,8 +361,7 @@ class Multimon(object):
 
     def handle_frame(self, tnc2_frame):
         if self.config.get('new_decoder') is not None:
-            import aprs.util
-            aprs_frame = aprs.util.decode_aprs_ascii_frame(tnc2_frame)
+            aprs_frame = aprs.decode_aprs_ascii_frame(tnc2_frame)
             self._logger.debug('aprs_frame=%s', aprs_frame)
         else:
             try:
