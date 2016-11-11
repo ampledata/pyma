@@ -3,7 +3,7 @@
 
 """PYMMA Package."""
 
-from pymma.classes import APRSFrame, IGate, Multimon
+from pymma.classes import IGate, Multimon
 from pymma.exceptions import InvalidFrame
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
