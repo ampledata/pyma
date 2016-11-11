@@ -328,7 +328,8 @@ class Multimon(object):
                 stderr=open('/dev/null')
             )
 
-            multimon_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
+            multimon_cmd = [
+                'multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
             self._logger.debug('multimon_cmd="%s"', ' '.join(multimon_cmd))
 
             multimon_proc = subprocess.Popen(
@@ -359,45 +360,22 @@ class Multimon(object):
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
-    def handle_frame(self, tnc2_frame):
-        if self.config.get('new_decoder') is not None:
-            aprs_frame = aprs.decode_aprs_ascii_frame(tnc2_frame)
-            self._logger.debug('aprs_frame=%s', aprs_frame)
+    def handle_frame(self, frame):
+        frame = aprs.APRSFrame(frame)
+        self._logger.debug('frame=%s', frame)
 
-            if bool(self.config.get('append_callsign')):
-                aprs_frame['path'].extend([u'qAR', self.config['callsign']])
+        if bool(self.config.get('append_callsign')):
+            frame.path.extend(['qAR', self.config['callsign']])
 
-            if pymma.constants.REJECT_PATHS.intersection(aprs_frame['path']):
-                self._logger.info(
-                    'Rejected frame with REJECTED_PATH: %s', aprs_frame)
-            elif aprs_frame['text'].startswith('}'):
-                # '}' is the Third-Party Data Type Identifier (used to
-                # encapsulate packets) indicating traffic from the Internet.
-                self._logger.info(
-                    'Rejected frame from the Internet: %s', aprs_frame)
-            else:
-                self._logger.debug('PUT "%s"', aprs_frame)
-                #self.frame_queue.put(aprs_frame, True, 10)
-        else:
-            try:
-                frame = APRSFrame()
-                frame.import_tnc2(tnc2_frame)
+        if self.config.get('reject_paths', []).intersection(frame.path):
+            self._logger.warn(
+                'Rejected frame with REJECTED_PATH: "%s"', frame)
+            return
 
-                if bool(self.config.get('append_callsign')):
-                    frame.path.extend([u'qAR', self.config['callsign']])
+        if (bool(self.config.get('reject_internet')) and
+            frame.text.startswith('}')):
+            self._logger.warn(
+                'Rejected frame from the Internet: "%s"', frame)
+            return
 
-                if pymma.constants.REJECT_PATHS.intersection(frame.path):
-                    self._logger.info(
-                        'Rejected frame with REJECTED_PATH: %s',
-                        frame.export(False))
-                elif frame.payload.startswith('}'):
-                    # '}' is the Third-Party Data Type Identifier (used to
-                    # encapsulate packets) indicating traffic from the Internet.
-                    self._logger.info(
-                        'Rejected frame from the Internet: %s',
-                        frame.export(False))
-                else:
-                    self.frame_queue.put(frame, True, 10)
-
-            except pymma.InvalidFrame:
-                self._logger.info('Invalid Frame Received')
+        self.frame_queue.put(frame, True, 10)
