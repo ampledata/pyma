@@ -1,24 +1,41 @@
-pymultimonaprs
-==============
+pymma - Python Multi Monitor APRS
+*********************************
 
-RF2APRS-IG Gateway supporting this backends:
+pymma is an RF to APRS-IS gateway supporting several backends:
 
 - Pulseaudio
 - ALSA
 - RTL-SDR
+- HackRF (via Soapy)
 
+You can inject frames directly from RF (SDR), or from an audio source (ALSA).
+
+
+pymma vs. pymultimonaprs
+========================
+
+pymma is derived from Dominik Heidler's work on https://github.com/asdil12/pymultimonaprs
+
+Credit for the majority of the work on pymma goes to @asdil12, et al. pymma is
+intended as a fork from pymultimonaprs. While I plan to match capabilities and
+contribute back to the pymultimonaprs project, pymma will vary in several aspects.
+
+Every intention has been made to credit Dominik throughout this code, and to
+maintain and uphold GPL (to the best of my understanding).
+
+It goes without saying that @asdil12 did most of the heavy lifting :).
 
 Installation
 ------------
 
-- Install multimonNG
-- Install rtl-sdr (for RTL-SDR backend)
-- Run `python2 setup.py install`
+- Install multimon-ng
+- Install rtl-sdr or soapy (for RTL-SDR backend)
+- Run `make install`
 
 Configuration
 -------------
 
-Edit `/etc/pymultimonaprs.json`:
+Edit `/etc/pymma.json`:
 
 ### Backend
 
@@ -53,6 +70,11 @@ This will be read in like the status-file and can look like that:
 		"gust": 200
 	},
 	"temperature": 18.5,
+	"rain": {
+		"rainlast1h": 10,
+		"rainlast24h": 20,
+		"rainmidnight": 15
+	},
 	"humidity": 20,
 	"pressure": 1013.25
 }
@@ -66,6 +88,10 @@ This will be read in like the status-file and can look like that:
 	- `direction` is in deg
 	- `gust` is in km/h
 - `temperature` is in °C
+- `rain`
+	- `rainlast1h` is in mm
+	- `rainlast24h` is in mm
+	- `rainmidnight` is in mm
 - `humidity` is in %
 - `pressure` is in hPa
 
@@ -74,9 +100,38 @@ The timestamp **must** be included - everything else is optional.
 ### Symbol
 
 The correct symbol is already selected.
-If you still want to change it, you can find the symbol table [here](https://github.com/asdil12/pymultimonaprs/wiki/Symbol-Table).
+If you still want to change it, you can find the symbol table [here](https://github.com/asdil12/pymma/wiki/Symbol-Table).
+
+### IPv4 / IPv6
+
+To select a protocol you can set `preferred_protocol` to `ipv4`, `ipv6` or `any`.  
+You use a raw IPv6 address as a gateway like this: `"[2000::1234]:14580"`.
 
 Running
--------
+=======
 
-- Run `systemctl start pymultimonaprs` or just `pymultimonaprs -v` for testing
+- It is recommended you run pymma with supervisor or systemd.
+
+- Run `systemctl start pymma` or just `pymma -v` for testing
+
+
+Chef Cookbook
+=============
+
+See https://github.com/ampledata/cookbook-pymma
+
+Source
+======
+Github: https://github.com/ampledata/pymma
+
+Author
+======
+Greg Albrecht W2GMD <oss@undef.net>
+
+Copyright
+=========
+Copyright 2016 Dominik Heidler
+
+License
+=======
+Apache License, Version 2.0
