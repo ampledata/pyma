@@ -1,5 +1,5 @@
-pymma - Python Multi Monitor APRS
-*********************************
+pymma - Python Multimon APRS
+****************************
 
 pymma is an RF to APRS-IS gateway supporting several backends:
 
@@ -34,7 +34,7 @@ Installation
 Configuration
 =============
 
-Edit `/etc/pymma.json`:
+Edit `/etc/pymma.json`
 
 Backend
 ^^^^^^^
@@ -118,11 +118,11 @@ Running
 
 - It is recommended you run pymma with supervisor or systemd.
 
-- Run `systemctl start pymma` or just `pymma -v` for testing
+- Run `systemctl start pymma` or just `pymma -v` for testing.
 
 
 Chef Cookbook
--------------
+^^^^^^^^^^^^^
 
 See https://github.com/ampledata/cookbook-pymma
 
