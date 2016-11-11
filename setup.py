@@ -8,6 +8,7 @@ Source:: https://github.com/ampledata/pymma
 """
 
 import setuptools
+import sys
 
 __title__ = 'pymma'
 __version__ = '1.1.0'
