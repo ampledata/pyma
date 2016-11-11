@@ -7,72 +7,21 @@ import errno
 import itertools
 import logging
 import logging.handlers
-import pkg_resources
 import Queue
 import random
-import re
 import socket
 import subprocess
 import threading
 import time
 
 import aprs
+import pkg_resources
 
 import pymma.constants
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
-
-
-class InvalidFrame(Exception):
-    pass
-
-
-class APRSFrame(object):
-
-    _logger = logging.getLogger(__name__)
-    if not _logger.handlers:
-        _logger.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
-        _logger.addHandler(_console_handler)
-        _logger.propagate = False
-
-    def __init__(self):
-        self.source = None
-        self.dest = None
-        self.path = []
-        self.payload = unicode()
-
-    def import_tnc2(self, tnc2_frame, decode=True):
-        if decode:
-            tnc2_frame = tnc2_frame.decode('ISO-8859-1')
-
-        tnc2_frame = tnc2_frame.replace('\r', '')
-        header, payload = tnc2_frame.split(':', 1)
-        header = header.strip()
-        payload = payload.strip()
-
-        try:
-            res = pymma.constants.HEADER_REX.match(header).groupdict()
-            self.source = res['source']
-            self.dest = res['dest']
-            self.path = res['path'].split(',')
-        except:
-            self._logger.info('Invalid Frame: %s', tnc2_frame)
-
-        self.payload = payload
-
-    def export(self, encode=True):
-        tnc2 = "%s>%s,%s:%s" % (
-            self.source, self.dest, ','.join(self.path), self.payload)
-        if len(tnc2) > 510:
-            tnc2 = tnc2[:510]
-        if encode:
-            tnc2 = tnc2.encode('ISO-8859-1')
-        return tnc2
 
 
 class IGate(object):
@@ -132,7 +81,7 @@ class IGate(object):
                 self.socket = socket.socket(*addrinfo[0][0:3])
 
                 self._logger.info(
-                    "Connecting to %s:%i" % (addrinfo[0][4][0], self.port))
+                    "Connecting to %s:%i", addrinfo[0][4][0], self.port)
 
                 self.socket.connect(addrinfo[0][4])
 
@@ -149,8 +98,6 @@ class IGate(object):
                     version = 'GIT'
 
                 # Login
-                self._logger.info("login %s (PYMMA %s)" % (
-                    self.callsign, version))
                 self.socket.send(
                     "user %s pass %s vers PYMMA %s filter "
                     "r/38/-171/1\r\n" % (
@@ -162,8 +109,8 @@ class IGate(object):
                 self.connected = True
             except socket.error as ex:
                 self._logger.warn(
-                    "Error when connecting to %s:%d: '%s'" %
-                    (self.server, self.port, str(ex)))
+                    "Error when connecting to %s:%d: '%s'",
+                    self.server, self.port, str(ex))
                 time.sleep(1)
 
     def _disconnect(self):
@@ -178,7 +125,7 @@ class IGate(object):
             self.frame_queue.put(frame, True, 10)
         except Queue.Full:
             self._logger.warn(
-                "Lost TX data (queue full): '%s'" % frame.export(False))
+                "Lost TX data (queue full): '%s'", frame)
 
     def _socket_worker(self):
         """
@@ -189,8 +136,8 @@ class IGate(object):
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-                    self._logger.debug("Sending: %s" % frame.export(False))
-                    raw_frame = "%s\r\n" % frame.export()
+                    self._logger.debug("Sending: %s", frame)
+                    raw_frame = "%s\r\n" % frame
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
@@ -225,12 +172,12 @@ class IGate(object):
                 if ex.errno == errno.EAGAIN or ex.errno == errno.EWOULDBLOCK:
                     self._logger.warn(
                         'Connection issue, sleeping for %ss: "%s"',
-                        rand_sleep, str(e))
+                        rand_sleep, str(ex))
                     time.sleep(rand_sleep)
                 else:
                     self._logger.warn(
                         'Connection issue, sleeping for %ss: "%s"',
-                        rand_sleep, str(e))
+                        rand_sleep, str(ex))
                     time.sleep(rand_sleep)
 
                     # try to reconnect
@@ -324,9 +271,10 @@ class Multimon(object):
 
             src_proc = subprocess.Popen(
                 src_cmd,
-                stdout=subprocess.PIPE,
-                stderr=open('/dev/null')
+                stdout=subprocess.PIPE
             )
+
+            self.processes['src'] = src_proc
 
             multimon_cmd = [
                 'multimon-ng', '-a', 'AFSK1200', '-A', '-t', 'raw', '-']
@@ -334,11 +282,9 @@ class Multimon(object):
 
             multimon_proc = subprocess.Popen(
                 multimon_cmd,
-                stdin=src_proc.stdout,
-                stdout=subprocess.PIPE,
-                stderr=open('/dev/null'))
-
-            self.processes['src'] = src_proc
+                stdin=self.processes['src'].stdout,
+                stdout=subprocess.PIPE
+            )
 
         self.processes['multimon'] = multimon_proc
 
@@ -351,7 +297,6 @@ class Multimon(object):
                 self._logger.exception(
                     'Raised Exception while trying to terminate %s: %s',
                     name, ex)
-                pass
 
     def _multimon_worker(self):
         while self._running:
@@ -360,6 +305,21 @@ class Multimon(object):
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
+    def reject_frame(self, frame):
+        if set(self.config.get(
+                'reject_paths',
+                pymma.constants.REJECT_PATHS)).intersection(frame.path):
+            self._logger.warn(
+                'Rejected frame with REJECTED_PATH: "%s"', frame)
+            return True
+        elif (bool(self.config.get('reject_internet')) and
+              frame.text.startswith('}')):
+            self._logger.warn(
+                'Rejected frame from the Internet: "%s"', frame)
+            return True
+
+        return False
+
     def handle_frame(self, frame):
         frame = aprs.APRSFrame(frame)
         self._logger.debug('frame=%s', frame)
@@ -367,15 +327,5 @@ class Multimon(object):
         if bool(self.config.get('append_callsign')):
             frame.path.extend(['qAR', self.config['callsign']])
 
-        if self.config.get('reject_paths', []).intersection(frame.path):
-            self._logger.warn(
-                'Rejected frame with REJECTED_PATH: "%s"', frame)
-            return
-
-        if (bool(self.config.get('reject_internet')) and
-            frame.text.startswith('}')):
-            self._logger.warn(
-                'Rejected frame from the Internet: "%s"', frame)
-            return
-
-        self.frame_queue.put(frame, True, 10)
+        if not self.reject_frame(frame):
+            self.frame_queue.put(frame, True, 10)
