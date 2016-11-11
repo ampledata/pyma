@@ -10,7 +10,6 @@ pymma is an RF to APRS-IS gateway supporting several backends:
 
 You can inject frames directly from RF (SDR), or from an audio source (ALSA).
 
-
 pymma vs. pymultimonaprs
 ========================
 
@@ -26,28 +25,31 @@ maintain and uphold GPL (to the best of my understanding).
 It goes without saying that @asdil12 did most of the heavy lifting :).
 
 Installation
-------------
+============
 
 - Install multimon-ng
 - Install rtl-sdr or soapy (for RTL-SDR backend)
 - Run `make install`
 
 Configuration
--------------
+=============
 
 Edit `/etc/pymma.json`:
 
-### Backend
+Backend
+^^^^^^^
 
 Set the source to `rtl`, `alsa`, or `pulse` to select the backend
 
-### Status
+Status
+^^^^^^
 
 Set the status `text`, or set a status `file` - the content of this file will be read at runtime and sent as status.
 This way you can eg. monitor your battery status using APRS-IG.
 Set both `text` and `file` to `false` to disable status beacon.
 
-#### Position Ambiguity
+Position Ambiguity
+^^^^^^^^^^^^^^^^^^
 
 To hide your exact position you can set the ambiguity value to a value from 0 to 4.
 - 0 will not hide anything
@@ -56,31 +58,33 @@ To hide your exact position you can set the ambiguity value to a value from 0 to
 - 3 will decrease precision to 10 min
 - 4 will decrease precision to 1°
 
-### Weather
+Weather
+^^^^^^^
 
-You can set `weather` to a json-file. eg: `"weather": "/path/to/weather.json",`  
-If you don't want do send weather date, just leave it on `false`.  
-This will be read in like the status-file and can look like that:
-```json
-{
-	"timestamp": 1366148418,
-	"wind": {
-		"speed": 10,
-		"direction": 240,
-		"gust": 200
-	},
-	"temperature": 18.5,
-	"rain": {
-		"rainlast1h": 10,
-		"rainlast24h": 20,
-		"rainmidnight": 15
-	},
-	"humidity": 20,
-	"pressure": 1013.25
-}
-```
+You can set `weather` to a json-file. eg: `"weather": "/path/to/weather.json",`
+If you don't want do send weather date, just leave it on `false`.
+This will be read in like the status-file and can look like that::
 
-#### Legend
+    {
+    	"timestamp": 1366148418,
+    	"wind": {
+    		"speed": 10,
+    		"direction": 240,
+    		"gust": 200
+    	},
+    	"temperature": 18.5,
+    	"rain": {
+    		"rainlast1h": 10,
+    		"rainlast24h": 20,
+    		"rainmidnight": 15
+    	},
+    	"humidity": 20,
+    	"pressure": 1013.25
+    }
+
+
+Legend
+^^^^^^
 
 - `timestamp` is seconds since epoch - **must** be included
 - `wind`
@@ -97,14 +101,16 @@ This will be read in like the status-file and can look like that:
 
 The timestamp **must** be included - everything else is optional.
 
-### Symbol
+Symbol
+^^^^^^
 
 The correct symbol is already selected.
 If you still want to change it, you can find the symbol table [here](https://github.com/asdil12/pymma/wiki/Symbol-Table).
 
-### IPv4 / IPv6
+IPv4 / IPv6
+^^^^^^^^^^^
 
-To select a protocol you can set `preferred_protocol` to `ipv4`, `ipv6` or `any`.  
+To select a protocol you can set `preferred_protocol` to `ipv4`, `ipv6` or `any`.
 You use a raw IPv6 address as a gateway like this: `"[2000::1234]:14580"`.
 
 Running
@@ -116,7 +122,7 @@ Running
 
 
 Chef Cookbook
-=============
+-------------
 
 See https://github.com/ampledata/cookbook-pymma
 
@@ -134,4 +140,4 @@ Copyright 2016 Dominik Heidler
 
 License
 =======
-Apache License, Version 2.0
+GNU General Public License, Version 3
