@@ -13,7 +13,7 @@ __license__ = 'GNU General Public License, Version 3'
 
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter(
-    '%(asctime)s PYMMA %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
+    '%(asctime)s pymma %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
     ' - %(message)s')
 
 START_FRAME_REX = re.compile(r'^APRS: (.*)')
