@@ -328,7 +328,7 @@ class Multimon(object):
         return False
 
     def handle_frame(self, frame):
-        frame = aprs.APRSFrame(frame)
+        frame = aprs.Frame(frame)
         self._logger.debug('frame=%s', frame)
 
         if bool(self.config.get('append_callsign')):
