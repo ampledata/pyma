@@ -108,7 +108,7 @@ class IGate(object):
                     "r/38/-171/1\r\n" % (
                         self.callsign, self.passcode, version)
                 )
-                self.socket.send(str.encode(login_info))
+                self.socket.send(login_info)
 
                 server_return = self.socket.recv(1024)
                 self._logger.info(server_return)
