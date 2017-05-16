@@ -3,13 +3,20 @@
 
 """PYMMA Commands"""
 
+from __future__ import print_function
+
 import argparse
 import json
-import queue
+import sys
 import time
 
 import pymma
 import pymma.beacon
+
+if sys.version_info.major == 2:
+    import Queue as queue
+else:
+    import queue
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'

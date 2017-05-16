@@ -7,17 +7,22 @@ import errno
 import itertools
 import logging
 import logging.handlers
-import queue
 import random
 import socket
 import subprocess
+import sys
 import threading
 import time
 
 import aprs
 import pkg_resources
 
-import pymma.constants
+import pymma
+
+if sys.version_info.major == 2:
+    import Queue as queue
+else:
+    import queue
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'

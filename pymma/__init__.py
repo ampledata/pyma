@@ -3,8 +3,12 @@
 
 """PYMMA Package."""
 
-from pymma.classes import IGate, Multimon
-from pymma.exceptions import InvalidFrame
+from .constants import (LOG_LEVEL, LOG_FORMAT, START_FRAME_REX,  # NOQA
+                        SAMPLE_RATE, HEADER_REX, REJECT_PATHS)
+
+from .exceptions import InvalidFrame  # NOQA
+
+from .classes import IGate, Multimon  # NOQA
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
