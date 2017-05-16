@@ -7,6 +7,8 @@ import datetime
 import json
 import os
 
+import aprs
+
 import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
@@ -43,7 +45,7 @@ def encode_lng(lng):
 
 
 def make_frame(callsign, payload):
-    frame = pymma.APRSFrame()
+    frame = aprs.Frame()
     frame.source = callsign
     frame.dest = 'APRS'
     frame.path = ['TCPIP*']
