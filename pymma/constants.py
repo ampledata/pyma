@@ -4,6 +4,7 @@
 """PYMMA Constats."""
 
 import logging
+import os
 import re
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
