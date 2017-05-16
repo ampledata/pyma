@@ -35,10 +35,10 @@ class IGate(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -199,10 +199,10 @@ class Multimon(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -234,7 +234,7 @@ class Multimon(object):
                 stderr=open('/dev/null')
             )
         else:
-            sample_rate = str(pymma.constants.SAMPLE_RATE)
+            sample_rate = str(pymma.SAMPLE_RATE)
 
             if self.config['source'] == 'rtl':
                 # Allow use of 'rx_fm' for Soapy/HackRF
@@ -308,14 +308,14 @@ class Multimon(object):
     def _multimon_worker(self):
         while self._running:
             read_line = self.processes['multimon'].stdout.readline().strip()
-            matched_line = pymma.constants.START_FRAME_REX.match(read_line)
+            matched_line = pymma.START_FRAME_REX.match(read_line)
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
     def reject_frame(self, frame):
         if set(self.config.get(
                 'reject_paths',
-                pymma.constants.REJECT_PATHS)).intersection(frame.path):
+                pymma.REJECT_PATHS)).intersection(frame.path):
             self._logger.warn(
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True

@@ -47,9 +47,9 @@ def encode_lng(lng):
 def make_frame(callsign, payload):
     frame = aprs.Frame()
     frame.source = callsign
-    frame.dest = 'APRS'
+    frame.destination = 'APRS'
     frame.path = ['TCPIP*']
-    frame.payload = payload
+    frame.text = payload
     return frame
 
 
