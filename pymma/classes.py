@@ -7,7 +7,7 @@ import errno
 import itertools
 import logging
 import logging.handlers
-import Queue
+import queue
 import random
 import socket
 import subprocess
@@ -88,7 +88,7 @@ class IGate(object):
                 self._logger.info('Connected!')
 
                 server_hello = self.socket.recv(1024)
-                self._logger.info(server_hello.strip(" \r\n"))
+                self._logger.info(server_hello)
 
                 # Try to get my version
                 try:
@@ -98,13 +98,15 @@ class IGate(object):
                     version = 'GIT'
 
                 # Login
-                self.socket.send(
+                login_info = (
                     "user %s pass %s vers PYMMA %s filter "
                     "r/38/-171/1\r\n" % (
-                        self.callsign, self.passcode, version))
+                        self.callsign, self.passcode, version)
+                )
+                self.socket.send(str.encode(login_info))
 
                 server_return = self.socket.recv(1024)
-                self._logger.info(server_return.strip(" \r\n"))
+                self._logger.info(server_return)
 
                 self.connected = True
             except socket.error as ex:
@@ -123,7 +125,7 @@ class IGate(object):
         try:
             # wait 10sec for queue slot, then drop the data
             self.frame_queue.put(frame, True, 10)
-        except Queue.Full:
+        except queue.Full:
             self._logger.warn(
                 "Lost TX data (queue full): '%s'", frame)
 
@@ -147,7 +149,7 @@ class IGate(object):
                                 "Failed to send data - "
                                 "number of sent bytes: 0")
                         totalsent += sent
-                except Queue.Empty:
+                except queue.Empty:
                     pass
 
                 # (try to) read from socket to prevent buffer fillup

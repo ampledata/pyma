@@ -5,7 +5,7 @@
 
 import argparse
 import json
-import Queue
+import queue
 import time
 
 import pymma
@@ -68,9 +68,9 @@ def cli():
     with open(args.config) as config_file:
         config = json.load(config_file)
 
-    print 'Starting PYMMA...'
+    print('Starting PYMMA...')
 
-    frame_queue = Queue.Queue(maxsize=1)
+    frame_queue = queue.Queue(maxsize=1)
 
     igate = pymma.IGate(
         frame_queue,

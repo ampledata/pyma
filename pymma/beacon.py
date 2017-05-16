@@ -45,8 +45,8 @@ def encode_lng(lng):
 def make_frame(callsign, payload):
     frame = pymma.APRSFrame()
     frame.source = callsign
-    frame.dest = u'APRS'
-    frame.path = [u'TCPIP*']
+    frame.dest = 'APRS'
+    frame.path = ['TCPIP*']
     frame.payload = payload
     return frame
 

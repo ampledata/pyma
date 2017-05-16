@@ -20,7 +20,7 @@
         "lng": 10.00000,
         "table": "/",
         "symbol": "&",
-        "comment": "PyMultimonAPRS iGate",
+        "comment": "PYMMA iGate",
         "status": {
             "text": "Running on Creator CI20 MIPS with RTL dongle.",
             "file": false
