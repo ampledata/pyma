@@ -147,19 +147,22 @@ class IGate(object):
                                 "Failed to send data - "
                                 "number of sent bytes: 0")
                         totalsent += sent
-                except Queue.Empty:
+                except Queue.Empty as ex:
+                    self._logger.exception(ex)
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(0)
                 try:
                     self.socket.recv(40960)
-                except socket.error as e:
-                    if not e.errno == 11:
+                except socket.error as ex:
+                    self._logger.exception(ex)
+                    if not ex.errno == 11:
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(1)
             except socket.error as ex:
+                self._logger.exception(ex)
                 # possible errors on IO:
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
