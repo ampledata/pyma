@@ -3,6 +3,9 @@
 
 """PYMMA Package."""
 
+from .constants import (LOG_LEVEL, LOG_FORMAT, START_FRAME_REX,  # NOQA
+                        SAMPLE_RATE, HEADER_REX, REJECT_PATHS)
+
 from .classes import IGate, Multimon  # NOQA
 
 from .exceptions import InvalidFrame  # NOQA
