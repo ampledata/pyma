@@ -12,7 +12,7 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-if (bool(os.environ.get('DEBUG')):
+if bool(os.environ.get('DEBUG')):
     LOG_LEVEL = logging.DEBUG
     logging.debug('Debugging Enabled via DEBUG Environment Variable.')
 else:
