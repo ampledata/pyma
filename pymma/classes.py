@@ -148,7 +148,7 @@ class IGate(object):
                                 "number of sent bytes: 0")
                         totalsent += sent
                 except Queue.Empty as ex:
-                    self._logger.exception(ex)
+                    self._logger.debug(ex)
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
@@ -156,13 +156,13 @@ class IGate(object):
                 try:
                     self.socket.recv(40960)
                 except socket.error as ex:
-                    self._logger.exception(ex)
+                    self._logger.debug(ex)
                     if not ex.errno == 11:
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(1)
             except socket.error as ex:
-                self._logger.exception(ex)
+                self._logger.debug(ex)
                 # possible errors on IO:
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
