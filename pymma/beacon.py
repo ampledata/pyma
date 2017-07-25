@@ -42,12 +42,12 @@ def encode_lng(lng):
     return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
 
 
-def make_frame(callsign, payload):
-    frame = pymma.APRSFrame()
+def make_frame(callsign, text):
+    frame = aprs.Frame()
     frame.source = callsign
-    frame.dest = u'APRS'
+    frame.destination = u'APRS'
     frame.path = [u'TCPIP*']
-    frame.payload = payload
+    frame.text = text
     return frame
 
 
@@ -55,8 +55,8 @@ def get_beacon_frame(lat, lng, callsign, table, symbol, comment, ambiguity):
     enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
     enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
     pos = "%s%s%s" % (enc_lat, table, enc_lng)
-    payload = "=%s%s%s" % (pos, symbol, comment)
-    return make_frame(callsign, payload)
+    text = "=%s%s%s" % (pos, symbol, comment)
+    return make_frame(callsign, text)
 
 
 def get_status_frame(callsign, status):
@@ -67,8 +67,8 @@ def get_status_frame(callsign, status):
             status_text = status['text']
         else:
             return None
-        payload = ">%s" % status_text
-        return make_frame(callsign, payload)
+        text = ">%s" % status_text
+        return make_frame(callsign, text)
     except:
         return None
 
@@ -141,7 +141,7 @@ def get_weather_frame(callsign, weather):
         if 'pressure' in w:
             wenc += "b%04d" % round(w['pressure'] * 10)
 
-        payload = "_%sPyMM" % wenc
-        return make_frame(callsign, payload)
+        text = "_%sPyMM" % wenc
+        return make_frame(callsign, text)
     except:
         return None

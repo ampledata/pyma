@@ -4,6 +4,7 @@
 """PYMMA Constats."""
 
 import logging
+import os
 import re
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
@@ -11,7 +12,12 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-LOG_LEVEL = logging.DEBUG
+if (bool(os.environ.get('DEBUG')):
+    LOG_LEVEL = logging.DEBUG
+    logging.debug('Debugging Enabled via DEBUG Environment Variable.')
+else:
+    LOG_LEVEL = logging.INFO
+
 LOG_FORMAT = logging.Formatter(
     '%(asctime)s pymma %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
     ' - %(message)s')
