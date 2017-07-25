@@ -7,6 +7,8 @@ import datetime
 import json
 import os
 
+import aprs
+
 import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
