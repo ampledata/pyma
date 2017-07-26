@@ -136,17 +136,15 @@ class IGate(object):
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-                    self._logger.debug("Sending: %s", frame)
+                    self._logger.info('Sending: "%s"', frame)
                     raw_frame = "%s\r\n" % frame
-                    totalsent = 0
-                    while totalsent < len(raw_frame):
-                        sent = self.socket.send(raw_frame[totalsent:])
+                    total_sent = 0
+                    while total_sent < len(raw_frame):
+                        sent = self.socket.send(raw_frame[total_sent:])
                         if sent == 0:
                             raise socket.error(
-                                0,
-                                "Failed to send data - "
-                                "number of sent bytes: 0")
-                        totalsent += sent
+                                0, "Failed to send data, 0 bytes sent.")
+                        total_sent += sent
                 except Queue.Empty as ex:
                     #
                     # Normally you should log all catched exceptions, only
@@ -171,13 +169,15 @@ class IGate(object):
                         raise
                 self.socket.setblocking(1)
             except socket.error as ex:
-                self._logger.exception(ex)
-                # possible errors on IO:
+                # Possible errors on IO:
+                #
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
+                #
+                self._logger.exception(ex)
 
                 rand_sleep = random.randint(1, 20)
 
@@ -195,7 +195,7 @@ class IGate(object):
                     # try to reconnect
                     self._connect()
 
-        self._logger.debug('Sending thread exit.')
+        self._logger.info('Sending thread exit.')
 
 
 class Multimon(object):
