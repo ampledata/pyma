@@ -148,7 +148,14 @@ class IGate(object):
                                 "number of sent bytes: 0")
                         totalsent += sent
                 except Queue.Empty as ex:
-                    self._logger.debug(ex)
+                    #
+                    # Normally you should log all catched exceptions, only
+                    # Queue uses the anti-pattern of try/catch for flow
+                    # control, so we're not going to log it in this case.
+                    #
+                    # See: http://wiki.c2.com/?DontUseExceptionsForFlowControl
+                    #
+                    # self._logger.exception(ex)
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
@@ -156,13 +163,15 @@ class IGate(object):
                 try:
                     self.socket.recv(40960)
                 except socket.error as ex:
-                    self._logger.debug(ex)
+                    # "[Errno 11] Resource temporarily unavailable" is OK.
+                    # self._logger.exception(ex)
                     if not ex.errno == 11:
+                        self._logger.exception(ex)
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(1)
             except socket.error as ex:
-                self._logger.debug(ex)
+                self._logger.exception(ex)
                 # possible errors on IO:
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
