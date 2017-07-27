@@ -333,11 +333,15 @@ class Multimon(object):
         return False
 
     def handle_frame(self, frame):
-        frame = aprs.Frame(frame)
-        self._logger.debug('frame=%s', frame)
+        try:
+            aprs_frame = aprs.Frame(frame)
+            self._logger.debug('aprs_frame=%s', aprs_frame)
 
-        if bool(self.config.get('append_callsign')):
-            frame.path.extend(['qAR', self.config['callsign']])
+            if bool(self.config.get('append_callsign')):
+                aprs_frame.path.extend(['qAR', self.config['callsign']])
 
-        if not self.reject_frame(frame):
-            self.frame_queue.put(frame, True, 10)
+            if not self.reject_frame(aprs_frame):
+                self.frame_queue.put(aprs_frame, True, 10)
+        except aprs.BadCallsignError as ex:
+            self._logger.exception(ex)
+            pass
