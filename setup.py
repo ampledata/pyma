@@ -11,7 +11,7 @@ import setuptools
 import sys
 
 __title__ = 'pymma'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __license__ = 'GNU General Public License, Version 3'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -37,7 +37,7 @@ setuptools.setup(
         ]
     },
     include_package_data=True,
-    install_requires=['aprs'],
+    install_requires=['aprs > 6.4, < 6.9'],
     license=open('LICENSE').read(),
     long_description=open('README.rst').read(),
     name='pymma',
