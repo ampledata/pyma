@@ -37,7 +37,7 @@ setuptools.setup(
         ]
     },
     include_package_data=True,
-    install_requires=['aprs >= 6.0.1'],
+    install_requires=['aprs > 6.4, < 6.9'],
     license=open('LICENSE').read(),
     long_description=open('README.rst').read(),
     name='pymma',
