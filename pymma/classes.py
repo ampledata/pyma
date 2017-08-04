@@ -17,7 +17,7 @@ import time
 import aprs
 import pkg_resources
 
-import pymma.constants
+import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -30,10 +30,10 @@ class IGate(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -136,36 +136,48 @@ class IGate(object):
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-                    self._logger.debug("Sending: %s", frame)
+                    self._logger.info('Sending: "%s"', frame)
                     raw_frame = "%s\r\n" % frame
-                    totalsent = 0
-                    while totalsent < len(raw_frame):
-                        sent = self.socket.send(raw_frame[totalsent:])
+                    total_sent = 0
+                    while total_sent < len(raw_frame):
+                        sent = self.socket.send(raw_frame[total_sent:])
                         if sent == 0:
                             raise socket.error(
-                                0,
-                                "Failed to send data - "
-                                "number of sent bytes: 0")
-                        totalsent += sent
-                except Queue.Empty:
+                                0, "Failed to send data, 0 bytes sent.")
+                        total_sent += sent
+                except Queue.Empty as ex:
+                    #
+                    # Normally you should log all catched exceptions, only
+                    # Queue uses the anti-pattern of try/catch for flow
+                    # control, so we're not going to log it in this case.
+                    #
+                    # See: http://wiki.c2.com/?DontUseExceptionsForFlowControl
+                    #
+                    # self._logger.exception(ex)
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(0)
                 try:
                     self.socket.recv(40960)
-                except socket.error as e:
-                    if not e.errno == 11:
+                except socket.error as ex:
+                    # "[Errno 11] Resource temporarily unavailable" is OK.
+                    # self._logger.exception(ex)
+                    if not ex.errno == 11:
+                        self._logger.exception(ex)
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(1)
             except socket.error as ex:
-                # possible errors on IO:
+                # Possible errors on IO:
+                #
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
+                #
+                self._logger.exception(ex)
 
                 rand_sleep = random.randint(1, 20)
 
@@ -183,7 +195,7 @@ class IGate(object):
                     # try to reconnect
                     self._connect()
 
-        self._logger.debug('Sending thread exit.')
+        self._logger.info('Sending thread exit.')
 
 
 class Multimon(object):
@@ -192,10 +204,10 @@ class Multimon(object):
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
-        _logger.setLevel(pymma.constants.LOG_LEVEL)
+        _logger.setLevel(pymma.LOG_LEVEL)
         _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(pymma.constants.LOG_LEVEL)
-        _console_handler.setFormatter(pymma.constants.LOG_FORMAT)
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
@@ -227,7 +239,7 @@ class Multimon(object):
                 stderr=open('/dev/null')
             )
         else:
-            sample_rate = str(pymma.constants.SAMPLE_RATE)
+            sample_rate = str(pymma.SAMPLE_RATE)
 
             if self.config['source'] == 'rtl':
                 # Allow use of 'rx_fm' for Soapy/HackRF
@@ -301,14 +313,14 @@ class Multimon(object):
     def _multimon_worker(self):
         while self._running:
             read_line = self.processes['multimon'].stdout.readline().strip()
-            matched_line = pymma.constants.START_FRAME_REX.match(read_line)
+            matched_line = pymma.START_FRAME_REX.match(read_line)
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
     def reject_frame(self, frame):
         if set(self.config.get(
                 'reject_paths',
-                pymma.constants.REJECT_PATHS)).intersection(frame.path):
+                pymma.REJECT_PATHS)).intersection(frame.path):
             self._logger.warn(
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True
@@ -321,11 +333,15 @@ class Multimon(object):
         return False
 
     def handle_frame(self, frame):
-        frame = aprs.APRSFrame(frame)
-        self._logger.debug('frame=%s', frame)
+        try:
+            aprs_frame = aprs.Frame(frame)
+            self._logger.debug('aprs_frame=%s', aprs_frame)
 
-        if bool(self.config.get('append_callsign')):
-            frame.path.extend(['qAR', self.config['callsign']])
+            if bool(self.config.get('append_callsign')):
+                aprs_frame.path.extend(['qAR', self.config['callsign']])
 
-        if not self.reject_frame(frame):
-            self.frame_queue.put(frame, True, 10)
+            if not self.reject_frame(aprs_frame):
+                self.frame_queue.put(aprs_frame, True, 10)
+        except aprs.BadCallsignError as ex:
+            self._logger.exception(ex)
+            pass
