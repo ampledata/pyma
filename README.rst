@@ -24,6 +24,12 @@ maintain and uphold GPL (to the best of my understanding).
 
 It goes without saying that @asdil12 did most of the heavy lifting :).
 
+Versions
+========
+
+- 1.3.x will be the last branch to support Python 2.7.x.
+- 2.x will support Python 3.6.x only.
+
 Installation
 ============
 
