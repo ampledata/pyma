@@ -18,11 +18,11 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-def process_ambiguity(pos: float, ambiguity: float):
+def process_ambiguity(pos: str, ambiguity: float):
     """
     Recalculate Postition with given ambiguity.
     """
-    num = bytearray(pos)
+    num = bytearray(pos, 'utf8')
     for i in range(0, ambiguity):
         if i > 1:
             # skip the dot
