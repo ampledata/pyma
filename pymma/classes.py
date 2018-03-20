@@ -6,17 +6,17 @@
 import errno
 import itertools
 import logging
-import logging.handlers
 import queue
 import random
 import socket
 import subprocess
-import sys
 import threading
 import time
 
-import aprslib
 import pkg_resources
+
+import aprslib
+from aprslib.packets.base import APRSPacket
 
 import pymma
 
@@ -25,7 +25,7 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-class IGate(object):
+class IGate(object):  # pylint: disable=too-many-instance-attributes
 
     """PYMMA IGate Class."""
 
@@ -38,7 +38,7 @@ class IGate(object):
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_queue: queue.Queue, callsign: str, passcode: str,
+    def __init__(self, frame_queue: queue.Queue, callsign: str, passcode: str,  # NOQA pylint: disable=too-many-arguments
                  gateways: list, proto: str) -> None:
         self.frame_queue = frame_queue
         self.callsign = callsign
@@ -60,10 +60,16 @@ class IGate(object):
         self._worker.start()
 
     def exit(self) -> None:
+        """
+        Called upon exit.
+        """
         self._running = False
         self._disconnect()
 
     def _connect(self) -> None:
+        """
+        Connects to the APRS-IS network.
+        """
         while not self.connected:
             try:
                 # Connect
@@ -112,23 +118,29 @@ class IGate(object):
 
                 self.connected = True
             except socket.error as ex:
-                self._logger.warn(
+                self._logger.warning(
                     "Error when connecting to %s:%d: '%s'",
                     self.server, self.port, str(ex))
                 time.sleep(1)
 
     def _disconnect(self) -> None:
+        """
+        Disconnects/closes socket.
+        """
         try:
             self.socket.close()
         except:
             pass
 
-    def send(self, frame: aprslib.packets.APRSPacket) -> None:
+    def send(self, frame: APRSPacket) -> None:
+        """
+        Adds frame to APRS-IS queue.
+        """
         try:
             # wait 10sec for queue slot, then drop the data
             self.frame_queue.put(frame, True, 10)
         except queue.Full:
-            self._logger.warn(
+            self._logger.warning(
                 'Lost TX data (queue full): "%s"', frame)
 
     def _socket_worker(self) -> None:
@@ -158,8 +170,8 @@ class IGate(object):
                 self.socket.setblocking(False)
                 try:
                     self.socket.recv(40960)
-                except socket.error as e:
-                    if not e.errno == 11:
+                except socket.error as exc:
+                    if not exc.errno == 11:
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(True)
@@ -174,12 +186,12 @@ class IGate(object):
                 rand_sleep = random.randint(1, 20)
 
                 if ex.errno == errno.EAGAIN or ex.errno == errno.EWOULDBLOCK:
-                    self._logger.warn(
+                    self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
                         rand_sleep, str(ex))
                     time.sleep(rand_sleep)
                 else:
-                    self._logger.warn(
+                    self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
                         rand_sleep, str(ex))
                     time.sleep(rand_sleep)
@@ -309,27 +321,27 @@ class Multimon(object):
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
-    def reject_frame(self, frame: aprslib.packets.APRSPacket) -> bool:
+    def reject_frame(self, frame: APRSPacket) -> bool:
         if set(self.config.get(
                 'reject_paths',
                 pymma.REJECT_PATHS)).intersection(frame.path):
-            self._logger.warn(
+            self._logger.warning(
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True
         elif (bool(self.config.get('reject_internet')) and
               frame.text.startswith('}')):
-            self._logger.warn(
+            self._logger.warning(
                 'Rejected frame from the Internet: "%s"', frame)
             return True
 
         return False
 
-    def handle_frame(self, frame: aprslib.packets.APRSPacket) -> None:
+    def handle_frame(self, frame: APRSPacket) -> None:
         parsed_frame = aprslib.parse(frame)
         self._logger.debug('parsed_frame="%s"', parsed_frame)
 
         if bool(self.config.get('append_callsign')):
-            parsed_frame.path.extend(['qAR', self.config['callsign']])
+            parsed_frame['path'].extend(['qAR', self.config['callsign']])
 
         if not self.reject_frame(parsed_frame):
             self.frame_queue.put(parsed_frame, True, 10)

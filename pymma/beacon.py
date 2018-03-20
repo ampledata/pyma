@@ -9,6 +9,8 @@ import os
 
 import aprslib
 
+from aprslib.packets.base import APRSPacket
+
 import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
@@ -17,6 +19,9 @@ __license__ = 'GNU General Public License, Version 3'
 
 
 def process_ambiguity(pos: float, ambiguity: float):
+    """
+    Recalculate Postition with given ambiguity.
+    """
     num = bytearray(pos)
     for i in range(0, ambiguity):
         if i > 1:
@@ -29,6 +34,9 @@ def process_ambiguity(pos: float, ambiguity: float):
 
 
 def encode_lat(lat: float):
+    """
+    Encode Latitude in DDMMSS format.
+    """
     lat_dir = 'N' if lat > 0 else 'S'
     lat_abs = abs(lat)
     lat_deg = int(lat_abs)
@@ -37,6 +45,9 @@ def encode_lat(lat: float):
 
 
 def encode_lng(lng: float):
+    """
+    Encode Longitude in DDMMSS format.
+    """
     lng_dir = 'E' if lng > 0 else 'W'
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
@@ -44,52 +55,51 @@ def encode_lng(lng: float):
     return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
 
 
-def make_frame(callsign, payload):
-    frame = aprslib.packets.PositionReport()
-    frame = aprs.Frame()
-    frame.source = callsign
-    frame.destination = 'APRS'
-    frame.path = ['TCPIP*']
-    frame.text = payload
-    return frame
-
-
-def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,
+def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA pylint: disable=too-many-arguments
                      symbol: str, comment: str,
-                     ambiguity: float) -> aprslib.packets.APRSPacket:
+                     ambiguity: float) -> APRSPacket:
+    """
+    Generate beacon frame.
+    """
     enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
     enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
-    pos = "%s%s%s" % (enc_lat, table, enc_lng)
-    payload = "=%s%s%s" % (pos, symbol, comment)
 
     frame = aprslib.packets.PositionReport()
-    frame.latitude(enc_lat)
-    frame.longitude(enc_lng)
+    frame.fromcall = callsign
+    frame.latitude = enc_lat
+    frame.longitude = enc_lng
     frame.symbol = symbol
     frame.table = table
     frame.comment = comment
     return frame
 
 
-def get_status_frame(callsign: str, status: str) -> aprslib.packets.APRSPacket:
-    try:
-        if status['file'] and os.path.exists(status['file']):
-            status_text = open(status['file']).read().decode('UTF-8').strip()
-        elif status['text']:
-            status_text = status['text']
-        else:
-            return
-        frame = aprslib.packets.APRSPacket()
-        frame.fromcall = callsign
-        frame.tocall = 'APRS'
-        frame.path = ['TCPIP*']
-        frame.body = status_text
-        return frame
-    except:
-        return
+def get_status_frame(callsign: str, status: str) -> APRSPacket:
+    """
+    Generate status frame.
+    """
+    status_text = None
+    if status['file'] and os.path.exists(status['file']):
+        status_text = open(status['file']).read().decode('UTF-8').strip()
+    elif status['text']:
+        status_text = status['text']
+
+    if not status_text:
+        return None
+
+    frame = APRSPacket()
+    frame.fromcall = callsign
+    frame.tocall = 'APRS'
+    frame.path = ['TCPIP*']
+    frame.body = status_text
+    return frame
 
 
-def get_weather_frame(callsign, weather):
+
+def get_weather_frame(callsign, weather):  # NOQA pylint: disable=too-many-branches,too-many-statements
+    """
+    Generate weather frame.
+    """
     try:
         w = json.load(open(weather))
 
@@ -158,6 +168,6 @@ def get_weather_frame(callsign, weather):
             wenc += "b%04d" % round(w['pressure'] * 10)
 
         payload = "_%sPyMM" % wenc
-        return make_frame(callsign, payload)
+        #return make_frame(callsign, payload)
     except:
         return
