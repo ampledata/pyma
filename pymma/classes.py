@@ -106,10 +106,11 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     version = 'GIT'
 
                 # Login
-                login_info = (
-                    'user {} pass {} vers PYMMA {} filter '
-                    'r/38/-171/1\r\n'.format(
-                        self.callsign, self.passcode, version)
+                login_info = bytes(
+                    ('user {} pass {} vers PYMMA {} filter '
+                     'r/38/-171/1\r\n'.format(
+                        self.callsign, self.passcode, version)),
+                    'utf8'
                 )
                 self.socket.send(login_info)
 
@@ -169,7 +170,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(False)
                 try:
-                    self.socket.recv(40960)
+                    self.socket.recv(4096)
                 except socket.error as exc:
                     if not exc.errno == 11:
                         # if the error is other than 'rx queue empty'
