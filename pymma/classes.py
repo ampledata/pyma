@@ -129,7 +129,7 @@ class IGate(object):
             self.frame_queue.put(frame, True, 10)
         except queue.Full:
             self._logger.warn(
-                'Lost TX data (queue full): '%s'", frame)
+                'Lost TX data (queue full): "%s"', frame)
 
     def _socket_worker(self) -> None:
         """

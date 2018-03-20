@@ -14,6 +14,7 @@ __license__ = 'GNU General Public License, Version 3'
 
 if bool(os.environ.get('DEBUG')):
     LOG_LEVEL = logging.DEBUG
+    logging.debug('Debugging Enabled via DEBUG Environment Variable.')
 else:
     LOG_LEVEL = logging.INFO
 
