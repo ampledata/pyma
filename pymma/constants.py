@@ -12,8 +12,7 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-
-if bool(os.environ.get('DEBUG_PYMMA')) or bool(os.environ.get('DEBUG_ALL')):
+if bool(os.environ.get('DEBUG')):
     LOG_LEVEL = logging.DEBUG
 else:
     LOG_LEVEL = logging.INFO

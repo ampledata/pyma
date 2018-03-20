@@ -7,6 +7,7 @@ Setup for pymma.
 Source:: https://github.com/ampledata/pymma
 """
 
+import os
 import setuptools
 import sys
 
@@ -37,7 +38,7 @@ setuptools.setup(
         ]
     },
     include_package_data=True,
-    install_requires=['aprs'],
+    install_requires=['aprslib'],
     license=open('LICENSE').read(),
     long_description=open('README.rst').read(),
     name='pymma',

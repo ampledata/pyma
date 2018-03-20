@@ -7,7 +7,7 @@ import datetime
 import json
 import os
 
-import aprs
+import aprslib
 
 import pymma
 
@@ -16,7 +16,7 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-def process_ambiguity(pos, ambiguity):
+def process_ambiguity(pos: float, ambiguity: float):
     num = bytearray(pos)
     for i in range(0, ambiguity):
         if i > 1:
@@ -28,7 +28,7 @@ def process_ambiguity(pos, ambiguity):
     return str(num)
 
 
-def encode_lat(lat):
+def encode_lat(lat: float):
     lat_dir = 'N' if lat > 0 else 'S'
     lat_abs = abs(lat)
     lat_deg = int(lat_abs)
@@ -36,7 +36,7 @@ def encode_lat(lat):
     return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
 
 
-def encode_lng(lng):
+def encode_lng(lng: float):
     lng_dir = 'E' if lng > 0 else 'W'
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
@@ -45,6 +45,7 @@ def encode_lng(lng):
 
 
 def make_frame(callsign, payload):
+    frame = aprslib.packets.PositionReport()
     frame = aprs.Frame()
     frame.source = callsign
     frame.destination = 'APRS'
@@ -53,26 +54,39 @@ def make_frame(callsign, payload):
     return frame
 
 
-def get_beacon_frame(lat, lng, callsign, table, symbol, comment, ambiguity):
+def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,
+                     symbol: str, comment: str,
+                     ambiguity: float) -> aprslib.packets.APRSPacket:
     enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
     enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
     pos = "%s%s%s" % (enc_lat, table, enc_lng)
     payload = "=%s%s%s" % (pos, symbol, comment)
-    return make_frame(callsign, payload)
+
+    frame = aprslib.packets.PositionReport()
+    frame.latitude(enc_lat)
+    frame.longitude(enc_lng)
+    frame.symbol = symbol
+    frame.table = table
+    frame.comment = comment
+    return frame
 
 
-def get_status_frame(callsign, status):
+def get_status_frame(callsign: str, status: str) -> aprslib.packets.APRSPacket:
     try:
         if status['file'] and os.path.exists(status['file']):
             status_text = open(status['file']).read().decode('UTF-8').strip()
         elif status['text']:
             status_text = status['text']
         else:
-            return None
-        payload = ">%s" % status_text
-        return make_frame(callsign, payload)
+            return
+        frame = aprslib.packets.APRSPacket()
+        frame.fromcall = callsign
+        frame.tocall = 'APRS'
+        frame.path = ['TCPIP*']
+        frame.body = status_text
+        return frame
     except:
-        return None
+        return
 
 
 def get_weather_frame(callsign, weather):
@@ -146,4 +160,4 @@ def get_weather_frame(callsign, weather):
         payload = "_%sPyMM" % wenc
         return make_frame(callsign, payload)
     except:
-        return None
+        return

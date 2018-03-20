@@ -7,6 +7,7 @@ import errno
 import itertools
 import logging
 import logging.handlers
+import queue
 import random
 import socket
 import subprocess
@@ -14,15 +15,10 @@ import sys
 import threading
 import time
 
-import aprs
+import aprslib
 import pkg_resources
 
 import pymma
-
-if sys.version_info.major == 2:
-    import Queue as queue
-else:
-    import queue
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -42,14 +38,15 @@ class IGate(object):
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_queue, callsign, passcode, gateways, proto):
+    def __init__(self, frame_queue: queue.Queue, callsign: str, passcode: str,
+                 gateways: list, proto: str) -> None:
         self.frame_queue = frame_queue
         self.callsign = callsign
         self.passcode = passcode
         self.gateways = itertools.cycle(gateways)
         self.proto = proto
 
-        self.socket = None
+        self.socket: socket.socket = socket.socket
         self.server = ''
         self.port = 0
         self.connected = False
@@ -62,11 +59,11 @@ class IGate(object):
         self._worker.setDaemon(True)
         self._worker.start()
 
-    def exit(self):
+    def exit(self) -> None:
         self._running = False
         self._disconnect()
 
-    def _connect(self):
+    def _connect(self) -> None:
         while not self.connected:
             try:
                 # Connect
@@ -93,7 +90,7 @@ class IGate(object):
                 self._logger.info('Connected!')
 
                 server_hello = self.socket.recv(1024)
-                self._logger.info(server_hello)
+                self._logger.info('server_hello="%s"', server_hello)
 
                 # Try to get my version
                 try:
@@ -104,14 +101,14 @@ class IGate(object):
 
                 # Login
                 login_info = (
-                    "user %s pass %s vers PYMMA %s filter "
-                    "r/38/-171/1\r\n" % (
+                    'user {} pass {} vers PYMMA {} filter '
+                    'r/38/-171/1\r\n'.format(
                         self.callsign, self.passcode, version)
                 )
                 self.socket.send(login_info)
 
                 server_return = self.socket.recv(1024)
-                self._logger.info(server_return)
+                self._logger.info('server_return="%s"', server_return)
 
                 self.connected = True
             except socket.error as ex:
@@ -120,21 +117,21 @@ class IGate(object):
                     self.server, self.port, str(ex))
                 time.sleep(1)
 
-    def _disconnect(self):
+    def _disconnect(self) -> None:
         try:
             self.socket.close()
         except:
             pass
 
-    def send(self, frame):
+    def send(self, frame: aprslib.packets.APRSPacket) -> None:
         try:
             # wait 10sec for queue slot, then drop the data
             self.frame_queue.put(frame, True, 10)
         except queue.Full:
             self._logger.warn(
-                "Lost TX data (queue full): '%s'", frame)
+                'Lost TX data (queue full): '%s'", frame)
 
-    def _socket_worker(self):
+    def _socket_worker(self) -> None:
         """
         Running as a thread, reading from socket, sending queue to socket
         """
@@ -144,28 +141,28 @@ class IGate(object):
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
                     self._logger.debug("Sending: %s", frame)
-                    raw_frame = "%s\r\n" % frame
+                    raw_frame = '{}\r\n'.format(frame)
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
                         if sent == 0:
                             raise socket.error(
                                 0,
-                                "Failed to send data - "
-                                "number of sent bytes: 0")
+                                'Failed to send data - '
+                                'number of sent bytes: 0')
                         totalsent += sent
                 except queue.Empty:
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
-                self.socket.setblocking(0)
+                self.socket.setblocking(False)
                 try:
                     self.socket.recv(40960)
                 except socket.error as e:
                     if not e.errno == 11:
                         # if the error is other than 'rx queue empty'
                         raise
-                self.socket.setblocking(1)
+                self.socket.setblocking(True)
             except socket.error as ex:
                 # possible errors on IO:
                 # [Errno  11] Buffer is empty (maybe not when using blocking
@@ -206,24 +203,24 @@ class Multimon(object):
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_queue, config):
+    def __init__(self, frame_queue: queue.Queue, config: dict) -> None:
         self.frame_queue = frame_queue
         self.config = config
 
-        self.processes = {}
+        self.processes: dict = {}
 
         self._start()
-        self._running = True
+        self._running: bool = True
         self._worker = threading.Thread(target=self._multimon_worker)
         self._worker.setDaemon(True)
         self._worker.start()
 
-    def exit(self):
+    def exit(self) -> None:
         self._running = False
         self._stop()
 
-    def _start(self):
-        self._logger.debug('source=%s', self.config['source'])
+    def _start(self) -> None:
+        self._logger.info('Starting from source="%s"', self.config['source'])
 
         if self.config['source'] == 'pulse':
             multimon_cmd = ['multimon-ng', '-a', 'AFSK1200', '-A']
@@ -295,7 +292,7 @@ class Multimon(object):
 
         self.processes['multimon'] = multimon_proc
 
-    def _stop(self):
+    def _stop(self) -> None:
         for name in ['multimon', 'src']:
             try:
                 proc = self.processes[name]
@@ -305,14 +302,14 @@ class Multimon(object):
                     'Raised Exception while trying to terminate %s: %s',
                     name, ex)
 
-    def _multimon_worker(self):
+    def _multimon_worker(self) -> None:
         while self._running:
             read_line = self.processes['multimon'].stdout.readline().strip()
             matched_line = pymma.START_FRAME_REX.match(read_line)
             if matched_line:
                 self.handle_frame(matched_line.group(1))
 
-    def reject_frame(self, frame):
+    def reject_frame(self, frame: aprslib.packets.APRSPacket) -> bool:
         if set(self.config.get(
                 'reject_paths',
                 pymma.REJECT_PATHS)).intersection(frame.path):
@@ -327,12 +324,12 @@ class Multimon(object):
 
         return False
 
-    def handle_frame(self, frame):
-        frame = aprs.Frame(frame)
-        self._logger.debug('frame=%s', frame)
+    def handle_frame(self, frame: aprslib.packets.APRSPacket) -> None:
+        parsed_frame = aprslib.parse(frame)
+        self._logger.debug('parsed_frame="%s"', parsed_frame)
 
         if bool(self.config.get('append_callsign')):
-            frame.path.extend(['qAR', self.config['callsign']])
+            parsed_frame.path.extend(['qAR', self.config['callsign']])
 
-        if not self.reject_frame(frame):
-            self.frame_queue.put(frame, True, 10)
+        if not self.reject_frame(parsed_frame):
+            self.frame_queue.put(parsed_frame, True, 10)
