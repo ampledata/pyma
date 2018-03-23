@@ -31,7 +31,7 @@ def process_ambiguity(position: str, ambiguity: int) -> str:
         # skip the direction
         i += 2
         position_ba[-i] = ord(' ')
-    return str(position_ba)
+    return position_ba.decode()
 
 
 def encode_lat(lat: float) -> str:
@@ -42,7 +42,8 @@ def encode_lat(lat: float) -> str:
     lat_abs = abs(lat)
     lat_deg = int(lat_abs)
     lat_min = (lat_abs % 1) * 60
-    return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
+    #return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
+    return "%02i%05.2f" % (lat_deg, lat_min)
 
 
 def encode_lng(lng: float):
@@ -53,7 +54,8 @@ def encode_lng(lng: float):
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
     lng_min = (lng_abs % 1) * 60
-    return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
+    #return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
+    return "%03i%05.2f" % (lng_deg, lng_min)
 
 
 def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA pylint: disable=too-many-arguments
@@ -67,11 +69,12 @@ def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA 
 
     frame = aprslib.packets.PositionReport()
     frame.fromcall = callsign
-    frame.latitude = enc_lat
-    frame.longitude = enc_lng
+    frame.latitude = lat
+    frame.longitude = lng
     frame.symbol = symbol
     frame.table = table
     frame.comment = comment
+    print(frame)
     return frame
 
 

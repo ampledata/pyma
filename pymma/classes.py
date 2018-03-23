@@ -153,8 +153,8 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-                    self._logger.debug("Sending: %s", frame)
-                    raw_frame = '{}\r\n'.format(frame)
+                    self._logger.debug('Sending frame="%s"', frame)
+                    raw_frame = bytes(str(frame) + '\r\n', 'utf8')
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
