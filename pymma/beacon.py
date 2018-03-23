@@ -18,22 +18,23 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-def process_ambiguity(pos: str, ambiguity: float):
+def process_ambiguity(position: str, ambiguity: int) -> str:
     """
     Recalculate Postition with given Ambiguity.
     """
-    num = bytearray(pos, 'utf8')
+    position_ba = bytearray(position, 'utf8')
     for i in range(0, ambiguity):
+        print(locals())
         if i > 1:
             # skip the dot
             i += 1
         # skip the direction
         i += 2
-        num[-i] = ' '
-    return num
+        position_ba[-i] = ord(' ')
+    return str(position_ba)
 
 
-def encode_lat(lat: float):
+def encode_lat(lat: float) -> str:
     """
     Encode Latitude in DDMMSS format.
     """
