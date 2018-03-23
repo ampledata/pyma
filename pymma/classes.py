@@ -330,7 +330,7 @@ class Multimon(object):
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True
         elif (bool(self.config.get('reject_internet')) and
-              frame['text']startswith('}')):
+              frame['text'].startswith('}')):
             self._logger.warning(
                 'Rejected frame from the Internet: "%s"', frame)
             return True
