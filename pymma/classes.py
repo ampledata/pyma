@@ -155,6 +155,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     frame = self.frame_queue.get(True, 1)
                     self._logger.debug('Sending frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\r\n', 'utf8')
+                    print(raw_frame)
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
@@ -325,24 +326,26 @@ class Multimon(object):
     def reject_frame(self, frame: APRSPacket) -> bool:
         if set(self.config.get(
                 'reject_paths',
-                pymma.REJECT_PATHS)).intersection(frame['path']):
+                pymma.REJECT_PATHS)).intersection(frame.path):
             self._logger.warning(
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True
         elif (bool(self.config.get('reject_internet')) and
-              frame['text'].startswith('}')):
+              frame.text.startswith('}')):
             self._logger.warning(
                 'Rejected frame from the Internet: "%s"', frame)
             return True
 
         return False
-
+ # {'raw': 'KI6VYK-2>APT312,WR6ABD*,BKELEY*,WIDE2*:>MT8000FA v1.0',
+ # 'from': 'KI6VYK-2', 'to': 'APT312', 'path': ['WR6ABD*', 'BKELEY*', 'WIDE2*'],
+ # 'via': '', 'format': 'status', 'status': 'MT8000FA v1.0'}
     def handle_frame(self, frame: APRSPacket) -> None:
-        parsed_frame = aprslib.parse(frame)
+        parsed_frame = APRSPacket(aprslib.parse(frame))
         self._logger.debug('parsed_frame="%s"', parsed_frame)
 
         if bool(self.config.get('append_callsign')):
-            parsed_frame['path'].extend(['qAR', self.config['callsign']])
+            parsed_frame.path.extend(['qAR', self.config['callsign']])
 
         if not self.reject_frame(parsed_frame):
             self.frame_queue.put(parsed_frame, True, 10)
