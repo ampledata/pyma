@@ -22,11 +22,11 @@ LOG_FORMAT = logging.Formatter(
     '%(asctime)s pymma %(levelname)s %(name)s.%(funcName)s:%(lineno)d'
     ' - %(message)s')
 
-START_FRAME_REX = re.compile(r'^APRS: (.*)')
+START_FRAME_REX = re.compile(b'^APRS: (.*)')
 SAMPLE_RATE = 22050
 
 HEADER_REX = re.compile(
-    r'^(?P<source>\w*(-\d{1,2})?)>(?P<dest>\w*(-\d{1,2})?),(?P<path>[^\s]*)')
+    b'^(?P<source>\w*(-\d{1,2})?)>(?P<dest>\w*(-\d{1,2})?),(?P<path>[^\s]*)')
 
 # Filter packets from TCP2RF gateways
 REJECT_PATHS = set(['TCPIP', 'TCPIP*', 'NOGATE', 'RFONLY'])

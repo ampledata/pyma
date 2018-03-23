@@ -30,7 +30,7 @@ def process_ambiguity(pos: str, ambiguity: float):
         # skip the direction
         i += 2
         num[-i] = ' '
-    return str(num)
+    return num
 
 
 def encode_lat(lat: float):
