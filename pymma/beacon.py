@@ -69,12 +69,12 @@ def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA 
 
     frame = aprslib.packets.PositionReport()
     frame.fromcall = callsign
+    frame.tocall = 'APYSPM'
     frame.latitude = lat
     frame.longitude = lng
     frame.symbol = symbol
     frame.table = table
     frame.comment = comment
-    print(frame)
     return frame
 
 
@@ -95,7 +95,7 @@ def get_status_frame(callsign: str, status: str) -> APRSPacket:
     frame.fromcall = callsign
     frame.tocall = 'APRS'
     frame.path = ['TCPIP*']
-    frame.body = status_text
+    frame.body = '>' + status_text
     return frame
 
 
