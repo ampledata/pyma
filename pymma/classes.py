@@ -155,7 +155,6 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     frame = self.frame_queue.get(True, 1)
                     self._logger.debug('Sending frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\r\n', 'utf8')
-                    print(raw_frame)
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
@@ -320,8 +319,11 @@ class Multimon(object):
         while self._running:
             read_line = self.processes['multimon'].stdout.readline().strip()
             matched_line = pymma.START_FRAME_REX.match(read_line)
+
             if matched_line:
-                self.handle_frame(matched_line.group(1))
+                frame = matched_line.group(1)
+                self._logger.debug('Matched frame="%s"', frame)
+                self.handle_frame(frame)
 
     def reject_frame(self, frame: APRSPacket) -> bool:
         if set(self.config.get(
@@ -337,15 +339,13 @@ class Multimon(object):
             return True
 
         return False
- # {'raw': 'KI6VYK-2>APT312,WR6ABD*,BKELEY*,WIDE2*:>MT8000FA v1.0',
- # 'from': 'KI6VYK-2', 'to': 'APT312', 'path': ['WR6ABD*', 'BKELEY*', 'WIDE2*'],
- # 'via': '', 'format': 'status', 'status': 'MT8000FA v1.0'}
-    def handle_frame(self, frame: APRSPacket) -> None:
-        parsed_frame = APRSPacket(aprslib.parse(frame))
-        self._logger.debug('parsed_frame="%s"', parsed_frame)
+
+    def handle_frame(self, frame: bytes) -> None:
+        aprs_packet = APRSPacket(frame.decode())
+        self._logger.debug('aprs_packet="%s"', aprs_packet)
 
         if bool(self.config.get('append_callsign')):
-            parsed_frame.path.extend(['qAR', self.config['callsign']])
+            aprs_packet.path.extend(['qAR', self.config['callsign']])
 
-        if not self.reject_frame(parsed_frame):
-            self.frame_queue.put(parsed_frame, True, 10)
+        if not self.reject_frame(aprs_packet):
+            self.frame_queue.put(aprs_packet, True, 10)
