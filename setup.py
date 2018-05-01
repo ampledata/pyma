@@ -8,7 +8,7 @@ Source:: https://github.com/ampledata/pymma
 """
 
 import os
-import setuptools
+import setuptools  # type: ignore
 import sys
 
 __title__ = 'pymma'

@@ -15,8 +15,8 @@ import time
 
 import pkg_resources
 
-import aprslib
-from aprslib.packets.base import APRSPacket
+import aprslib  # type: ignore
+from aprslib.packets.base import APRSPacket  # type: ignore
 
 import pymma
 
@@ -47,13 +47,13 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         self.proto = proto
 
         self.socket: socket.socket = socket.socket
-        self.server = ''
-        self.port = 0
-        self.connected = False
+        self.server: str = ''
+        self.port: int = 0
+        self.connected: bool = False
 
         self._connect()
 
-        self._running = True
+        self._running: bool = True
 
         self._worker = threading.Thread(target=self._socket_worker)
         self._worker.setDaemon(True)
@@ -155,6 +155,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     frame = self.frame_queue.get(True, 1)
                     self._logger.debug('Sending frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\r\n', 'utf8')
+                    self._logger.debug('Sending raw_frame="%s"', raw_frame)
                     totalsent = 0
                     while totalsent < len(raw_frame):
                         sent = self.socket.send(raw_frame[totalsent:])
@@ -164,6 +165,8 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                                 'Failed to send data - '
                                 'number of sent bytes: 0')
                         totalsent += sent
+                        self._logger.debug(
+                            'totalsent="%s" sent="%s"', totalsent, sent)
                 except queue.Empty:
                     pass
 
