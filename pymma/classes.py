@@ -165,7 +165,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
 
                 response = requests.post(
                     'http://noam.aprs2.net:8080',
-                    data='\n\r'.join([login_info, frame]))
+                    data='\n\r'.join([login_info, str(frame)]))
                 self._logger.debug('response="%s"', response)
             except queue.Empty:
                 pass
