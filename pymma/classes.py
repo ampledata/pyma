@@ -164,10 +164,9 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 login_info = (
                     'user {} pass {} vers PYMMA {}').format(
                         self.callsign, self.passcode, version)
-                )
                 data = '\n'.join([login_info, str(frame)])
                 headers = {'content-type': 'application/octet-stream'}
-                
+
                 response = requests.post(
                     'http://noam.aprs2.net:8080', data=data, headers)
                 self._logger.debug(
