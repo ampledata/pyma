@@ -55,7 +55,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
 
         self._running: bool = True
 
-        self._worker = threading.Thread(target=self._socket_worker)
+        self._worker = threading.Thread(target=self._http_worker)
         self._worker.setDaemon(True)
         self._worker.start()
 
@@ -143,6 +143,34 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         except queue.Full:
             self._logger.warning(
                 'Lost TX data (queue full): "%s"', frame)
+
+    def _http_worker(self) -> None:
+        while self._running:
+            try:
+                # wait max 1sec for new data
+                frame = self.frame_queue.get(True, 1)
+                self._logger.debug('Sending frame="%s"', frame)
+                gateway = next(self.gateways)
+
+                # Try to get my version
+                try:
+                    version = pkg_resources.get_distribution(
+                        'pymma').version
+                except:
+                    version = 'GIT'
+
+                # Login
+                login_info = 'user {} pass {} vers PYMMA {} filter r/38/-171/1\r\n'.format(
+                        self.callsign, self.passcode, version)
+
+                response = requests.post(
+                    'http://noam.aprs2.net:8080',
+                    data='\n\r'.join([login_info, frame]))
+                self._logger.debug('response="%s"', response)
+            except queue.Empty:
+                pass
+
+        self._logger.debug('Sending thread exit.')
 
     def _socket_worker(self) -> None:
         """
