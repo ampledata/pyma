@@ -38,7 +38,7 @@ setuptools.setup(
         ]
     },
     include_package_data=True,
-    install_requires=['aprslib'],
+    install_requires=['aprslib', 'requests'],
     license=open('LICENSE').read(),
     long_description=open('README.rst').read(),
     name='pymma',

@@ -14,6 +14,7 @@ import threading
 import time
 
 import pkg_resources
+import requests
 
 import aprslib  # type: ignore
 from aprslib.packets.base import APRSPacket  # type: ignore
