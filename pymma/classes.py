@@ -168,7 +168,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 headers = {'content-type': 'application/octet-stream'}
 
                 response = requests.post(
-                    'http://noam.aprs2.net:8080', data=data, headers)
+                    'http://noam.aprs2.net:8080', data=data, headers=headers)
                 self._logger.debug(
                     'response="%s" response.text="%s"',
                     response, response.text)
