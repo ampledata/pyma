@@ -161,12 +161,18 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     version = 'GIT'
 
                 # Login
-                login_info = 'user {} pass {} vers PYMMA {} filter r/38/-171/1\r\n'.format(self.callsign, self.passcode, version)
-
+                login_info = (
+                    'user {} pass {} vers PYMMA {}').format(
+                        self.callsign, self.passcode, version)
+                )
+                data = '\n'.join([login_info, str(frame)])
+                headers = {'content-type': 'application/octet-stream'}
+                
                 response = requests.post(
-                    'http://noam.aprs2.net:8080',
-                    data='\n\r'.join([login_info, str(frame)]))
-                self._logger.debug('response="%s"', response)
+                    'http://noam.aprs2.net:8080', data=data, headers)
+                self._logger.debug(
+                    'response="%s" response.text="%s"',
+                    response, response.text)
             except queue.Empty:
                 pass
 
