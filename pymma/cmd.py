@@ -5,13 +5,11 @@
 
 import argparse
 import json
-import sys
+import queue
 import time
 
 import pymma
 import pymma.beacon
-
-import queue
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'

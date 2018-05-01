@@ -109,7 +109,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 login_info = bytes(
                     ('user {} pass {} vers PYMMA {} filter '
                      'r/38/-171/1\r\n'.format(
-                        self.callsign, self.passcode, version)),
+                         self.callsign, self.passcode, version)),
                     'utf8'
                 )
                 self.socket.send(login_info)
@@ -160,8 +160,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     version = 'GIT'
 
                 # Login
-                login_info = 'user {} pass {} vers PYMMA {} filter r/38/-171/1\r\n'.format(
-                        self.callsign, self.passcode, version)
+                login_info = 'user {} pass {} vers PYMMA {} filter r/38/-171/1\r\n'.format(self.callsign, self.passcode, version)
 
                 response = requests.post(
                     'http://noam.aprs2.net:8080',
