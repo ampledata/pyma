@@ -52,9 +52,14 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         self.port: int = 0
         self.connected: bool = False
 
-        self._connect()
-
         self._running: bool = True
+        # Try to get my version
+        try:
+            self.version = pkg_resources.get_distribution(
+                'pymma').version
+        except Exception as exc:  # pylint: disable=broad-except
+            self._logger.exception(exc)
+            self.version = 'GIT'
 
         self._worker = threading.Thread(target=self._http_worker)
         self._worker.setDaemon(True)
@@ -99,18 +104,10 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 server_hello = self.socket.recv(1024)
                 self._logger.info('server_hello="%s"', server_hello)
 
-                # Try to get my version
-                try:
-                    version = pkg_resources.get_distribution(
-                        'pymma').version
-                except:
-                    version = 'GIT'
-
                 # Login
                 login_info = bytes(
-                    ('user {} pass {} vers PYMMA {} filter '
-                     'r/38/-171/1\r\n'.format(
-                         self.callsign, self.passcode, version)),
+                    ('user {} pass {} vers PYMMA {} filter m/10\r\n'.format(
+                        self.callsign, self.passcode, self.version)),
                     'utf8'
                 )
                 self.socket.send(login_info)
@@ -131,8 +128,8 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         """
         try:
             self.socket.close()
-        except:
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            self._logger.exception(exc)
 
     def send(self, frame: APRSPacket) -> None:
         """
@@ -141,50 +138,61 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         try:
             # wait 10sec for queue slot, then drop the data
             self.frame_queue.put(frame, True, 10)
-        except queue.Full:
+        except Exception as exc:  # pylint: disable=broad-except
+            self._logger.exception(exc)
             self._logger.warning(
                 'Lost TX data (queue full): "%s"', frame)
 
     def _http_worker(self) -> None:
-        while self._running:
-            try:
-                # wait max 1sec for new data
-                frame = self.frame_queue.get(True, 1)
-                self._logger.debug('Sending via HTTP frame="%s"', frame)
-                gateway = next(self.gateways)
+        with requests.Session() as session:
+            session.headers.update(
+                {'content-type': 'application/octet-stream'})
 
-                # Try to get my version
+            while self._running:
                 try:
-                    version = pkg_resources.get_distribution(
-                        'pymma').version
-                except:
-                    version = 'GIT'
+                    # wait max 1sec for new data
+                    frame = self.frame_queue.get(True, 1)
+                    self._logger.debug('Sending via HTTP frame="%s"', frame)
 
-                # Login
-                login_info = (
-                    'user {} pass {} vers PYMMA {}').format(
-                        self.callsign, self.passcode, version)
-                data = '\n'.join([login_info, str(frame)])
+                    # Login
+                    login_info = (
+                        'user {} pass {} vers PYMMA {}').format(
+                            self.callsign, self.passcode, self.version)
+                    data = '\n'.join([login_info, str(frame)])
 
-                with requests.Session() as session:
-                    session.keep_alive = False
-                    session.headers.update(
-                        {'content-type': 'application/octet-stream'})
                     response = session.post(
                         'http://noam.aprs2.net:8080', data=data)
                     self._logger.debug(
                         'response="%s" response.text="%s"',
                         response, response.text)
-
-            except queue.Empty:
-                pass
+                    session.raise_for_error()
+                    
+                except queue.Empty:
+                    pass
 
         self._logger.debug('Sending thread exit.')
+
+    def _udp_worker(self) -> None:
+        self._logger.info('Running UDP Worker Thread.')
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        while self._running:
+            try:
+                # wait max 1sec for new data
+                frame = self.frame_queue.get(True, 1)
+                self._logger.debug('Sending via UDP frame="%s"', frame)
+                login = 'user {} pass {} vers PYMMA {}'.format(
+                    self.callsign, self.passcode, self.version)
+                raw_frame = bytes('\n'.join([login, str(frame)]), 'utf8')
+                self.socket.sendto(raw_frame, ('noam.aprs2.net', 8080))
+            except queue.Empty:
+                pass
+        self._logger.debug('UDP Worker Thread Exit.')
 
     def _socket_worker(self) -> None:
         """
         Running as a thread, reading from socket, sending queue to socket
         """
+        self._connect()
         while self._running:
             try:
                 try:
@@ -212,7 +220,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 try:
                     self.socket.recv(4096)
                 except socket.error as exc:
-                    if not exc.errno == 11:
+                    if exc.errno != 11:
                         # if the error is other than 'rx queue empty'
                         raise
                 self.socket.setblocking(True)
@@ -269,6 +277,7 @@ class Multimon(object):
         self._worker.start()
 
     def exit(self) -> None:
+        """Exists the Thread."""
         self._running = False
         self._stop()
 
@@ -350,10 +359,10 @@ class Multimon(object):
             try:
                 proc = self.processes[name]
                 proc.terminate()
-            except Exception as ex:
+            except Exception as exc:  # pylint: disable=broad-except
                 self._logger.exception(
                     'Raised Exception while trying to terminate %s: %s',
-                    name, ex)
+                    name, exc)
 
     def _multimon_worker(self) -> None:
         while self._running:
@@ -366,6 +375,7 @@ class Multimon(object):
                 self.handle_frame(frame)
 
     def reject_frame(self, frame: APRSPacket) -> bool:
+        """Determines if the frame should be rejected."""
         if set(self.config.get(
                 'reject_paths',
                 pymma.REJECT_PATHS)).intersection(frame.path):
@@ -381,6 +391,7 @@ class Multimon(object):
         return False
 
     def handle_frame(self, frame: bytes) -> None:
+        """Handles the Frame from the APRS Decoder."""
         aprs_packet = APRSPacket(frame.decode())
         self._logger.debug('aprs_packet="%s"', aprs_packet)
 
@@ -388,4 +399,9 @@ class Multimon(object):
             aprs_packet.path.extend(['qAR', self.config['callsign']])
 
         if not self.reject_frame(aprs_packet):
-            self.frame_queue.put(aprs_packet, True, 10)
+            try:
+                self.frame_queue.put(aprs_packet, True, 10)
+            except queue.Full as exc:
+                self._logger.exception(exc)
+                self._logger.warning(
+                    'Lost TX data (queue full): "%s"', frame)
