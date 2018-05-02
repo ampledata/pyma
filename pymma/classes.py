@@ -150,7 +150,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             try:
                 # wait max 1sec for new data
                 frame = self.frame_queue.get(True, 1)
-                self._logger.debug('Sending frame="%s"', frame)
+                self._logger.debug('Sending via HTTP frame="%s"', frame)
                 gateway = next(self.gateways)
 
                 # Try to get my version
@@ -165,13 +165,17 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     'user {} pass {} vers PYMMA {}').format(
                         self.callsign, self.passcode, version)
                 data = '\n'.join([login_info, str(frame)])
-                headers = {'content-type': 'application/octet-stream'}
 
-                response = requests.post(
-                    'http://noam.aprs2.net:8080', data=data, headers=headers)
-                self._logger.debug(
-                    'response="%s" response.text="%s"',
-                    response, response.text)
+                with requests.Session() as session:
+                    session.keep_alive = False
+                    session.headers.update(
+                        {'content-type': 'application/octet-stream'})
+                    response = session.post(
+                        'http://noam.aprs2.net:8080', data=data)
+                    self._logger.debug(
+                        'response="%s" response.text="%s"',
+                        response, response.text)
+
             except queue.Empty:
                 pass
 
