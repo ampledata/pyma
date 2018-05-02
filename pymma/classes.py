@@ -61,7 +61,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             self._logger.exception(exc)
             self.version = 'GIT'
 
-        self._worker = threading.Thread(target=self._http_worker)
+        self._worker = threading.Thread(target=self._tcp_worker)
         self._worker.setDaemon(True)
         self._worker.start()
 
@@ -144,6 +144,8 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 'Lost TX data (queue full): "%s"', frame)
 
     def _http_worker(self) -> None:
+        self._logger.info('Running HTTP Worker Thread.')
+
         with requests.Session() as session:
             session.headers.update(
                 {'content-type': 'application/octet-stream'})
@@ -165,8 +167,8 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                     self._logger.debug(
                         'response="%s" response.text="%s"',
                         response, response.text)
-                    session.raise_for_error()
-                    
+                    #session.raise_for_error()
+
                 except queue.Empty:
                     pass
 
@@ -175,6 +177,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
     def _udp_worker(self) -> None:
         self._logger.info('Running UDP Worker Thread.')
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
         while self._running:
             try:
                 # wait max 1sec for new data
@@ -188,61 +191,67 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
                 pass
         self._logger.debug('UDP Worker Thread Exit.')
 
-    def _socket_worker(self) -> None:
+    def _tcp_worker(self) -> None:
         """
         Running as a thread, reading from socket, sending queue to socket
         """
+        self._logger.info('Running TCP Worker Thread.')
+
         self._connect()
+
         while self._running:
             try:
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-                    self._logger.debug('Sending frame="%s"', frame)
-                    raw_frame = bytes(str(frame) + '\r\n', 'utf8')
-                    self._logger.debug('Sending raw_frame="%s"', raw_frame)
-                    totalsent = 0
-                    while totalsent < len(raw_frame):
-                        sent = self.socket.send(raw_frame[totalsent:])
+                    self._logger.debug('Sending via TCP frame="%s"', frame)
+                    raw_frame = bytes(str(frame) + '\n', 'utf8')
+
+                    total_sent = 0
+                    while total_sent < len(raw_frame):
+                        sent = self.socket.send(raw_frame[total_sent:])
                         if sent == 0:
                             raise socket.error(
                                 0,
                                 'Failed to send data - '
                                 'number of sent bytes: 0')
-                        totalsent += sent
+                        total_sent += sent
                         self._logger.debug(
-                            'totalsent="%s" sent="%s"', totalsent, sent)
+                            'total_sent="%s" sent="%s"', total_sent, sent)
                 except queue.Empty:
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(False)
+
                 try:
                     self.socket.recv(4096)
                 except socket.error as exc:
                     if exc.errno != 11:
                         # if the error is other than 'rx queue empty'
                         raise
+
                 self.socket.setblocking(True)
-            except socket.error as ex:
+            except socket.error as exc:
                 # possible errors on IO:
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
+                self._logger.exception(exc)
 
                 rand_sleep = random.randint(1, 20)
 
-                if ex.errno == errno.EAGAIN or ex.errno == errno.EWOULDBLOCK:
+                if exc.errno == errno.EAGAIN or exc.errno == errno.EWOULDBLOCK:
                     self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
-                        rand_sleep, str(ex))
+                        rand_sleep, str(exc))
                     time.sleep(rand_sleep)
                 else:
                     self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
-                        rand_sleep, str(ex))
+                        rand_sleep, str(exc))
                     time.sleep(rand_sleep)
 
                     # try to reconnect
