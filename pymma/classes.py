@@ -401,7 +401,10 @@ class Multimon(object):
 
     def handle_frame(self, frame: bytes) -> None:
         """Handles the Frame from the APRS Decoder."""
-        aprs_packet = APRSPacket(frame.decode())
+        decoded_frame = frame.decode()
+        self._logger.debug('decoded_frame="%s"', decoded_frame)
+
+        aprs_packet = APRSPacket(decoded_frame)
         self._logger.debug('aprs_packet="%s"', aprs_packet)
 
         if bool(self.config.get('append_callsign')):
