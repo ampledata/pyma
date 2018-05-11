@@ -388,6 +388,8 @@ class Multimon(object):
 
             if matched_line:
                 frame = matched_line.group(1)
+                if not frame:
+                    next
                 self._logger.debug('Matched frame="%s"', frame)
                 self.handle_frame(frame)
 
@@ -409,6 +411,7 @@ class Multimon(object):
 
     def handle_frame(self, frame: bytes) -> None:
         """Handles the Frame from the APRS Decoder."""
+        self._logger.debug('Handling frame="%s"', frame)
         aprs_packet = None
 
         decoded_frame = frame.decode()
@@ -421,10 +424,10 @@ class Multimon(object):
             self._logger.warning(
                 'Failed to extract frame="%s"', decoded_frame)
 
+        self._logger.debug('aprs_packet="%s"', aprs_packet)
+
         if not aprs_packet:
             return
-
-        self._logger.debug('aprs_packet="%s"', aprs_packet)
 
         if bool(self.config.get('append_callsign')):
             aprs_packet.path.extend(['qAR', self.config['callsign']])
