@@ -416,7 +416,7 @@ class Multimon(object):
 
         try:
             aprs_packet = APRSPacket(decoded_frame)
-        except:
+        except Exception as exc:
             self._logger.exception(exc)
             self._logger.warning(
                 'Failed to extract frame="%s"', decoded_frame)
