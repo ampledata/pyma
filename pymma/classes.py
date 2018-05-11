@@ -137,7 +137,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         """
         try:
             # wait 10sec for queue slot, then drop the data
-            self.frame_queue.put_nowait(frame)
+            self.frame_queue.put(frame, True, 10)
         except Exception as exc:  # pylint: disable=broad-except
             self._logger.exception(exc)
             self._logger.warning(
@@ -153,7 +153,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             while self._running:
                 try:
                     # wait max 1sec for new data
-                    frame = self.frame_queue.get_nowait(True)
+                    frame = self.frame_queue.get(True, 1)
                     if not frame:
                         next
 
@@ -184,7 +184,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         while self._running:
             try:
                 # wait max 1sec for new data
-                frame = self.frame_queue.get_nowait(True)
+                frame = self.frame_queue.get(True, 1)
                 if not frame:
                     next
 
@@ -209,7 +209,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             try:
                 try:
                     # wait max 1sec for new data
-                    frame = self.frame_queue.get_nowait(True)
+                    frame = self.frame_queue.get(True, 1)
                     if not frame:
                         next
                     self._logger.debug('Sending via TCP frame="%s"', frame)
@@ -431,7 +431,7 @@ class Multimon(object):
 
         if not self.reject_frame(aprs_packet):
             try:
-                self.frame_queue.put_nowait(aprs_packet)
+                self.frame_queue.put(aprs_packet, True, 10)
             except queue.Full as exc:
                 self._logger.exception(exc)
                 self._logger.warning(
