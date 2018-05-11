@@ -137,7 +137,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         """
         try:
             # wait 10sec for queue slot, then drop the data
-            self.frame_queue.put(frame, True, 10)
+            self.frame_queue.put_nowait(frame)
         except Exception as exc:  # pylint: disable=broad-except
             self._logger.exception(exc)
             self._logger.warning(
@@ -153,7 +153,10 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             while self._running:
                 try:
                     # wait max 1sec for new data
-                    frame = self.frame_queue.get(True, 1)
+                    frame = self.frame_queue.get_nowait(True)
+                    if not frame:
+                        next
+
                     self._logger.debug('Sending via HTTP frame="%s"', frame)
 
                     # Login
@@ -181,7 +184,10 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         while self._running:
             try:
                 # wait max 1sec for new data
-                frame = self.frame_queue.get(True, 1)
+                frame = self.frame_queue.get_nowait(True)
+                if not frame:
+                    next
+
                 self._logger.debug('Sending via UDP frame="%s"', frame)
                 login = 'user {} pass {} vers PYMMA {}'.format(
                     self.callsign, self.passcode, self.version)
@@ -203,7 +209,9 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             try:
                 try:
                     # wait max 1sec for new data
-                    frame = self.frame_queue.get(True, 1)
+                    frame = self.frame_queue.get_nowait(True)
+                    if not frame:
+                        next
                     self._logger.debug('Sending via TCP frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\n', 'utf8')
 
@@ -423,7 +431,7 @@ class Multimon(object):
 
         if not self.reject_frame(aprs_packet):
             try:
-                self.frame_queue.put(aprs_packet, True, 10)
+                self.frame_queue.put_nowait(aprs_packet)
             except queue.Full as exc:
                 self._logger.exception(exc)
                 self._logger.warning(
