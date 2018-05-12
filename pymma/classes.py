@@ -412,17 +412,28 @@ class Multimon(object):
     def handle_frame(self, frame: bytes) -> None:
         """Handles the Frame from the APRS Decoder."""
         self._logger.debug('Handling frame="%s"', frame)
-        aprs_packet = None
 
-        decoded_frame = frame.decode()
+        aprs_packet = None
+        decoded_frame = None
+
+        try:
+            decoded_frame = frame.decode()
+        except Exception as exc:
+            self._logger.warning(
+                'Failed to decode() frame="%s"', frame)
+            self._logger.exception(exc)
+
         self._logger.debug('decoded_frame="%s"', decoded_frame)
+
+        if not decoded_frame:
+            return
 
         try:
             aprs_packet = APRSPacket(decoded_frame)
         except Exception as exc:
-            self._logger.exception(exc)
             self._logger.warning(
-                'Failed to extract frame="%s"', decoded_frame)
+                'Failed to APRSPacket() frame="%s"', decoded_frame)
+            self._logger.exception(exc)
 
         self._logger.debug('aprs_packet="%s"', aprs_packet)
 
