@@ -38,7 +38,7 @@ def cli():
     threads = [igate_thread, multimon_thread]
 
     if config.get('beacon'):
-        beacon_thread = pymma.BeaconThread(igate, config)
+        beacon_thread = pymma.BeaconThread(igate_thread, config)
         threads.append(beacon_thread)
 
     try:
