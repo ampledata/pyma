@@ -38,7 +38,12 @@ setuptools.setup(
         ]
     },
     include_package_data=True,
-    install_requires=['aprslib', 'requests'],
+    install_requires=[
+        'aprslib',
+        'requests',
+        'pynmea2 >= 1.4.2',
+        'pyserial >= 2.7'
+    ],
     license=open('LICENSE').read(),
     long_description=open('README.rst').read(),
     name='pymma',

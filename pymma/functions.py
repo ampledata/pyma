@@ -93,7 +93,7 @@ def get_status_frame(callsign: str, status: str) -> APRSPacket:
 
     frame = APRSPacket()
     frame.fromcall = callsign
-    frame.tocall = 'APRS'
+    frame.tocall = 'APYSPM'
     frame.path = ['TCPIP*']
     frame.body = '>' + status_text
     return frame

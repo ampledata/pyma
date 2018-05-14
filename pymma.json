@@ -28,8 +28,12 @@
     "device": "default"
   },
   "beacon": {
-    "lat": "37.767",
-    "lng": "-122.4068333333333",
+    "location": {
+      "source": "static",
+      "lat": "37.767",
+      "lng": "-122.4068333333333",
+      "ambiguity": 0
+    },
     "table": "/",
     "symbol": "&",
     "comment": "PYMMA IGate",
@@ -39,7 +43,6 @@
     },
     "weather": false,
     "send_every": 3600,
-    "ambiguity": 0
   },
   "multimon-ng": {
     "install_path": "/usr/local/multimon-ng"

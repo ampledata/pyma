@@ -14,7 +14,9 @@ import threading
 import time
 
 import pkg_resources
+import pynmea2
 import requests
+import serial
 
 import aprslib  # type: ignore
 from aprslib.packets.base import APRSPacket  # type: ignore
@@ -171,7 +173,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                     if not frame:
                         next
 
-                    self._logger.debug('Sending via HTTP frame="%s"', frame)
+                    self._logger.info('Sending via HTTP frame="%s"', frame)
 
                     # Login
                     login_info = (
@@ -202,7 +204,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                 if not frame:
                     next
 
-                self._logger.debug('Sending via UDP frame="%s"', frame)
+                self._logger.info('Sending via UDP frame="%s"', frame)
                 login = 'user {} pass {} vers PYMMA {}'.format(
                     self.callsign, self.passcode, self.version)
                 raw_frame = bytes('\n'.join([login, str(frame)]), 'utf8')
@@ -226,7 +228,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                     frame = self.frame_queue.get(True, 1)
                     if not frame:
                         next
-                    self._logger.debug('Sending via TCP frame="%s"', frame)
+                    self._logger.info('Sending via TCP frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\n', 'utf8')
 
                     total_sent = 0
@@ -325,8 +327,8 @@ class BeaconThread(threading.Thread):
         beacon_config = self.config.get('beacon')
 
         bcargs = {
-            'lat': float(beacon_config['lat']),
-            'lng': float(beacon_config['lng']),
+            'lat': float(beacon_config['location']['lat']),
+            'lng': float(beacon_config['location']['lng']),
             'callsign': self.igate.callsign,
             'table': beacon_config['table'],
             'symbol': beacon_config['symbol'],
@@ -346,6 +348,90 @@ class BeaconThread(threading.Thread):
 
         while not self.stopped():
             # Position
+            frame = pymma.get_beacon_frame(**bcargs)
+            if frame:
+                self.igate.send(frame)
+
+            # Status
+            frame = pymma.get_status_frame(**bcargs_status)
+            if frame:
+                self.igate.send(frame)
+
+            # Weather
+            frame = pymma.get_weather_frame(**bcargs_weather)
+            if frame:
+                self.igate.send(frame)
+
+            time.sleep(beacon_config['send_every'])
+
+
+class GPSBeaconThread(threading.Thread):
+
+    """
+    Threaded Beacon.
+    """
+
+    _logger = logging.getLogger(__name__)
+    if not _logger.handlers:
+        _logger.setLevel(pymma.LOG_LEVEL)
+        _console_handler = logging.StreamHandler()
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
+        _logger.addHandler(_console_handler)
+        _logger.propagate = False
+
+    def __init__(self, igate, config, gps):
+        super(BeaconThread, self).__init__()
+        self.igate = igate
+        self.config = config
+        self.gps = gps
+        self.daemon = True
+        self._stopper = threading.Event()
+
+    def stop(self):
+        """
+        Stop the thread at the next opportunity.
+        """
+        self._stopper.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stopper.isSet()
+
+    def run(self):
+        """
+        Runs the thread.
+        """
+        self._logger.info('Starting Beacon Thread="%s"', self)
+
+        beacon_config = self.config.get('beacon')
+
+
+        bcargs_status = {
+            'callsign': self.igate.callsign,
+            'status': beacon_config['status'],
+        }
+
+        bcargs_weather = {
+            'callsign': self.igate.callsign,
+            'weather': beacon_config['weather'],
+        }
+
+        while not self.stopped():
+            # Position
+            bcargs = {
+                'lat': float(self.gps.gps_props['latitude']),
+                'lng': float(self.gps.gps_props['longitude']),
+                'altitude': self.gps.gps_props.get('altitude', 0),
+                'callsign': self.igate.callsign,
+                'table': beacon_config['table'],
+                'symbol': beacon_config['symbol'],
+                'comment': beacon_config['comment'],
+                'ambiguity': beacon_config['location'].get('ambiguity', 0),
+            }
+
             frame = pymma.get_beacon_frame(**bcargs)
             if frame:
                 self.igate.send(frame)
@@ -547,3 +633,53 @@ class MultimonThread(threading.Thread):
                 self._logger.exception(exc)
                 self._logger.warning(
                     'Lost TX data (queue full): "%s"', frame)
+
+
+class SerialGPSPoller(threading.Thread):
+
+    """Threadable Object for polling a serial NMEA-compatible GPS."""
+
+    _logger = logging.getLogger(__name__)
+    if not _logger.handlers:
+        _logger.setLevel(pymma.LOG_LEVEL)
+        _console_handler = logging.StreamHandler()
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
+        _logger.addHandler(_console_handler)
+        _logger.propagate = False
+
+    def __init__(self, serial_port, serial_speed):
+        super(SerialGPSPoller, self).__init__()
+        self._serial_port = serial_port
+        self._serial_speed = serial_speed
+
+        self.gps_props = {}
+        for prop in pymma.NMEA_PROPERTIES:
+            self.gps_props[prop] = None
+
+        self._serial_int = serial.Serial(
+            self._serial_port, self._serial_speed, timeout=1)
+
+        self.daemon = True
+        self._stopper = threading.Event()
+
+    def stop(self):
+        """
+        Stop the thread at the next opportunity.
+        """
+        self._stopper.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stopper.isSet()
+
+    def run(self):
+        streamreader = pynmea2.NMEAStreamReader(self._serial_int)
+        time.sleep(pymma.GPS_WARM_UP)
+        while not self.stopped():
+            for msg in streamreader.next():
+                for prop in pymma.NMEA_PROPERTIES:
+                    if getattr(msg, prop, None) is not None:
+                        self.gps_props[prop] = getattr(msg, prop)
