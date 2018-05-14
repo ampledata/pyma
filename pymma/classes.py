@@ -380,7 +380,7 @@ class MultimonThread(threading.Thread):
         super(MultimonThread, self).__init__()
         self.frame_queue = frame_queue
         self.config = config
-        self.processes: list = []
+        self.processes: dict = {}
         self.daemon = True
         self._stopper = threading.Event()
 
