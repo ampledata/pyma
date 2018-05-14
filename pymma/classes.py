@@ -40,7 +40,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
         _logger.propagate = False
 
     def __init__(self, frame_queue: queue.Queue, config: dict) -> None:
-        super(IGate, self).__init__()
+        super(IGateThread, self).__init__()
         self.frame_queue = frame_queue
         self.config = config
 
@@ -298,7 +298,7 @@ class BeaconThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, igate, config):
-        super(Beacon, self).__init__()
+        super(BeaconThread, self).__init__()
         self.igate = igate
         self.config = config
         self.daemon = True
@@ -377,6 +377,7 @@ class MultimonThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, frame_queue: queue.Queue, config: dict) -> None:
+        super(MultimonThread, self).__init__()
         self.frame_queue = frame_queue
         self.config = config
         self.daemon = True
