@@ -26,7 +26,7 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-class IGate(object):  # pylint: disable=too-many-instance-attributes
+class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attributes
 
     """PYMMA IGate Class."""
 
@@ -39,20 +39,24 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_queue: queue.Queue, callsign: str, passcode: str,  # NOQA pylint: disable=too-many-arguments
-                 gateways: list, proto: str) -> None:
+    def __init__(self, frame_queue: queue.Queue, config: dict): -> None:
+        super(IGate, self).__init__()
         self.frame_queue = frame_queue
-        self.callsign = callsign
-        self.passcode = passcode
-        self.gateways = itertools.cycle(gateways)
-        self.proto = proto
+        self.config = config
 
-        self.socket: socket.socket = socket.socket
         self.server: str = ''
         self.port: int = 0
         self.connected: bool = False
+        self.socket: socket.socket = socket.socket
 
-        self._running: bool = True
+        self.callsign: str = self.config['callsign']
+        self.passcode: str = self.config['passcode']
+        self.gateways: list = itertools.cycle(self.config['gateways'])
+        self.proto: str = self.config.get('proto', 'any')
+
+        self.daemon = True
+        self._stopper = threading.Event()
+
         # Try to get my version
         try:
             self.version = pkg_resources.get_distribution(
@@ -61,16 +65,25 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             self._logger.exception(exc)
             self.version = 'GIT'
 
-        self._worker = threading.Thread(target=self._tcp_worker)
-        self._worker.setDaemon(True)
-        self._worker.start()
-
-    def exit(self) -> None:
+    def stop(self):
         """
-        Called upon exit.
+        Stop the thread at the next opportunity.
         """
-        self._running = False
         self._disconnect()
+        self._stopper.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stopper.isSet()
+
+    def run(self):
+        """
+        Runs the thread.
+        """
+        self._logger.info('Starting IGate Thread="%s"', self)
+        self._tcp_worker()
 
     def _connect(self) -> None:
         """
@@ -129,6 +142,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         try:
             self.socket.close()
         except Exception as exc:  # pylint: disable=broad-except
+            self._logger.warning('Raised Exception trying to close socket:')
             self._logger.exception(exc)
 
     def send(self, frame: APRSPacket) -> None:
@@ -150,7 +164,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
             session.headers.update(
                 {'content-type': 'application/octet-stream'})
 
-            while self._running:
+            while not self.stopped():
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
@@ -181,7 +195,7 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         self._logger.info('Running UDP Worker Thread.')
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        while self._running:
+        while not self.stopped():
             try:
                 # wait max 1sec for new data
                 frame = self.frame_queue.get(True, 1)
@@ -201,11 +215,11 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         """
         Running as a thread, reading from socket, sending queue to socket
         """
-        self._logger.info('Running TCP Worker Thread.')
+        self._logger.info('Running TCP Worker Thread %s', self)
 
         self._connect()
 
-        while self._running:
+        while not self.stopped():
             try:
                 try:
                     # wait max 1sec for new data
@@ -268,9 +282,90 @@ class IGate(object):  # pylint: disable=too-many-instance-attributes
         self._logger.debug('Sending thread exit.')
 
 
-class Multimon(object):
+class BeaconThread(threading.Thread):
 
-    """PYMMA Multimon Class."""
+    """
+    Threaded Beacon.
+    """
+
+    _logger = logging.getLogger(__name__)
+    if not _logger.handlers:
+        _logger.setLevel(pymma.LOG_LEVEL)
+        _console_handler = logging.StreamHandler()
+        _console_handler.setLevel(pymma.LOG_LEVEL)
+        _console_handler.setFormatter(pymma.LOG_FORMAT)
+        _logger.addHandler(_console_handler)
+        _logger.propagate = False
+
+    def __init__(self, igate, config):
+        super(Beacon, self).__init__()
+        self.igate = igate
+        self.config = config
+        self.daemon = True
+        self._stopper = threading.Event()
+
+    def stop(self):
+        """
+        Stop the thread at the next opportunity.
+        """
+        self._stopper.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stopper.isSet()
+
+    def run(self):
+        """
+        Runs the thread.
+        """
+        self._logger.info('Starting Beacon Thread="%s"', self)
+
+        beacon_config = self.config.get('beacon')
+
+        bcargs = {
+            'lat': float(beacon_config['lat']),
+            'lng': float(beacon_config['lng']),
+            'callsign': self.igate.callsign,
+            'table': beacon_config['table'],
+            'symbol': beacon_config['symbol'],
+            'comment': beacon_config['comment'],
+            'ambiguity': beacon_config.get('ambiguity', 0),
+        }
+
+        bcargs_status = {
+            'callsign': self.igate.callsign,
+            'status': beacon_config['status'],
+        }
+
+        bcargs_weather = {
+            'callsign': self.igate.callsign,
+            'weather': beacon_config['weather'],
+        }
+
+        while not self.stopped():
+            # Position
+            frame = pymma.get_beacon_frame(**bcargs)
+            if frame:
+                self.igate.send(frame)
+
+            # Status
+            frame = pymma.get_status_frame(**bcargs_status)
+            if frame:
+                self.igate.send(frame)
+
+            # Weather
+            frame = pymma.get_weather_frame(**bcargs_weather)
+            if frame:
+                self.igate.send(frame)
+
+            time.sleep(beacon_config['send_every'])
+
+
+class MultimonThread(threading.Thread):
+
+    """PYMMA SourceThread Class."""
 
     _logger = logging.getLogger(__name__)
     if not _logger.handlers:
@@ -284,21 +379,10 @@ class Multimon(object):
     def __init__(self, frame_queue: queue.Queue, config: dict) -> None:
         self.frame_queue = frame_queue
         self.config = config
+        self.daemon = True
+        self._stopper = threading.Event()
 
-        self.processes: dict = {}
-
-        self._start()
-        self._running: bool = True
-        self._worker = threading.Thread(target=self._multimon_worker)
-        self._worker.setDaemon(True)
-        self._worker.start()
-
-    def exit(self) -> None:
-        """Exists the Thread."""
-        self._running = False
-        self._stop()
-
-    def _start(self) -> None:
+    def _workers(self) -> None:
         self._logger.info('Starting from source="%s"', self.config['source'])
 
         if self.config['source'] == 'pulse':
@@ -371,18 +455,9 @@ class Multimon(object):
 
         self.processes['multimon'] = multimon_proc
 
-    def _stop(self) -> None:
-        for name in ['multimon', 'src']:
-            try:
-                proc = self.processes[name]
-                proc.terminate()
-            except Exception as exc:  # pylint: disable=broad-except
-                self._logger.exception(
-                    'Raised Exception while trying to terminate %s: %s',
-                    name, exc)
-
-    def _multimon_worker(self) -> None:
-        while self._running:
+    def run(self) -> None:
+        self._workers()
+        while not self.stopped():
             read_line = self.processes['multimon'].stdout.readline().strip()
             matched_line = pymma.START_FRAME_REX.match(read_line)
 
@@ -392,6 +467,26 @@ class Multimon(object):
                     next
                 self._logger.debug('Matched frame="%s"', frame)
                 self.handle_frame(frame)
+
+    def stop(self):
+        """
+        Stop the thread at the next opportunity.
+        """
+        for name in ['multimon', 'src']:
+            try:
+                proc = self.processes[name]
+                proc.terminate()
+            except Exception as exc:  # pylint: disable=broad-except
+                self._logger.exception(
+                    'Raised Exception while trying to terminate %s: %s',
+                    name, exc)
+        self._stopper.set()
+
+    def stopped(self):
+        """
+        Checks if the thread is stopped.
+        """
+        return self._stopper.isSet()
 
     def reject_frame(self, frame: APRSPacket) -> bool:
         """Determines if the frame should be rejected."""

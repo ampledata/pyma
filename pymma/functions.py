@@ -99,7 +99,6 @@ def get_status_frame(callsign: str, status: str) -> APRSPacket:
     return frame
 
 
-
 def get_weather_frame(callsign, weather):  # NOQA pylint: disable=too-many-branches,too-many-statements
     """
     Generate weather frame.

@@ -8,6 +8,10 @@ from .constants import (LOG_LEVEL, LOG_FORMAT, START_FRAME_REX,  # NOQA
 
 from .exceptions import InvalidFrame  # NOQA
 
+from .functions import (process_ambiguity, encode_lat, encode_lng,  # NOQA
+                        get_beacon_frame, get_status_frame,
+                        get_weather_frame)
+
 from .classes import IGate, Multimon  # NOQA
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
