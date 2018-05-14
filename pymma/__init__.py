@@ -12,7 +12,7 @@ from .functions import (process_ambiguity, encode_lat, encode_lng,  # NOQA
                         get_beacon_frame, get_status_frame,
                         get_weather_frame)
 
-from .classes import IGate, Multimon  # NOQA
+from .classes import IGateThread, BeaconThread, MultimonThread  # NOQA
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'

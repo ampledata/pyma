@@ -32,14 +32,14 @@ def cli():
     threads: list = []
     frame_queue: queue.Queue = queue.Queue()
 
-    igate = pymma.IGate(frame_queue, config)
-    multimon = pymma.Multimon(frame_queue, config)
+    igate_thread = pymma.IGateThread(frame_queue, config)
+    multimon_thread = pymma.MultimonThread(frame_queue, config)
 
-    threads = [igate, multimon]
+    threads = [igate_thread, multimon_thread]
 
     if config.get('beacon'):
-        beacon = pymma.Beacon(igate, config)
-        threads.append(beacon)
+        beacon_thread = pymma.BeaconThread(igate, config)
+        threads.append(beacon_thread)
 
     try:
         [thr.start() for thr in threads]
