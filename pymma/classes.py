@@ -39,7 +39,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
         _logger.addHandler(_console_handler)
         _logger.propagate = False
 
-    def __init__(self, frame_queue: queue.Queue, config: dict): -> None:
+    def __init__(self, frame_queue: queue.Queue, config: dict) -> None:
         super(IGate, self).__init__()
         self.frame_queue = frame_queue
         self.config = config
