@@ -7,7 +7,9 @@ import datetime
 import json
 import os
 
-import aprs
+import aprslib
+
+from aprslib.packets.base import APRSPacket
 
 import pymma
 
@@ -16,66 +18,91 @@ __copyright__ = 'Copyright 2016 Dominik Heidler'
 __license__ = 'GNU General Public License, Version 3'
 
 
-def process_ambiguity(pos, ambiguity):
-    num = bytearray(pos)
+def process_ambiguity(position: str, ambiguity: int) -> str:
+    """
+    Recalculate Postition with given Ambiguity.
+    """
+    position_ba = bytearray(position, 'utf8')
     for i in range(0, ambiguity):
+        print(locals())
         if i > 1:
             # skip the dot
             i += 1
         # skip the direction
         i += 2
-        num[-i] = ' '
-    return str(num)
+        position_ba[-i] = ord(' ')
+    return position_ba.decode()
 
 
-def encode_lat(lat):
+def encode_lat(lat: float) -> str:
+    """
+    Encode Latitude in DDMMSS format.
+    """
     lat_dir = 'N' if lat > 0 else 'S'
     lat_abs = abs(lat)
     lat_deg = int(lat_abs)
     lat_min = (lat_abs % 1) * 60
-    return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
+    #return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
+    return "%02i%05.2f" % (lat_deg, lat_min)
 
 
-def encode_lng(lng):
+def encode_lng(lng: float):
+    """
+    Encode Longitude in DDMMSS format.
+    """
     lng_dir = 'E' if lng > 0 else 'W'
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
     lng_min = (lng_abs % 1) * 60
-    return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
+    #return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
+    return "%03i%05.2f" % (lng_deg, lng_min)
 
 
-def make_frame(callsign, text):
-    frame = aprs.Frame()
-    frame.source = callsign
-    frame.destination = u'APRS'
-    frame.path = [u'TCPIP*']
-    frame.text = text
+def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA pylint: disable=too-many-arguments
+                     symbol: str, comment: str,
+                     ambiguity: float) -> APRSPacket:
+    """
+    Generate beacon frame.
+    """
+    enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
+    enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
+
+    frame = aprslib.packets.PositionReport()
+    frame.fromcall = callsign
+    frame.tocall = 'APYSPM'
+    frame.latitude = lat
+    frame.longitude = lng
+    frame.symbol = symbol
+    frame.table = table
+    frame.comment = comment
     return frame
 
 
-def get_beacon_frame(lat, lng, callsign, table, symbol, comment, ambiguity):
-    enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
-    enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
-    pos = "%s%s%s" % (enc_lat, table, enc_lng)
-    text = "=%s%s%s" % (pos, symbol, comment)
-    return make_frame(callsign, text)
+def get_status_frame(callsign: str, status: str) -> APRSPacket:
+    """
+    Generate status frame.
+    """
+    status_text = None
+    if status['file'] and os.path.exists(status['file']):
+        status_text = open(status['file']).read().decode('UTF-8').strip()
+    elif status['text']:
+        status_text = status['text']
 
-
-def get_status_frame(callsign, status):
-    try:
-        if status['file'] and os.path.exists(status['file']):
-            status_text = open(status['file']).read().decode('UTF-8').strip()
-        elif status['text']:
-            status_text = status['text']
-        else:
-            return None
-        text = ">%s" % status_text
-        return make_frame(callsign, text)
-    except:
+    if not status_text:
         return None
 
+    frame = APRSPacket()
+    frame.fromcall = callsign
+    frame.tocall = 'APYSPM'
+    frame.path = ['TCPIP*']
+    frame.body = '>' + status_text
+    return frame
 
-def get_weather_frame(callsign, weather):
+
+def get_weather_frame(callsign, weather):  # NOQA pylint: disable=too-many-branches,too-many-statements
+    """
+    Generate weather frame.
+    """
     try:
         w = json.load(open(weather))
 
@@ -143,7 +170,7 @@ def get_weather_frame(callsign, weather):
         if 'pressure' in w:
             wenc += "b%04d" % round(w['pressure'] * 10)
 
-        text = "_%sPyMM" % wenc
-        return make_frame(callsign, text)
+        payload = "_%sPyMM" % wenc
+        #return make_frame(callsign, payload)
     except:
-        return None
+        return

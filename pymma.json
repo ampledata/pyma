@@ -1,32 +1,53 @@
 {
-    "callsign": "W2GMD-15",
-    "passcode": "12345",
-    "gateways": ["noam.aprs2.net:14580"],
-    "append_callsign": true,
-    "source": "rtl",
-    "preferred_protocol": "ipv4",
-    "rtl": {
-        "freq": 144.390,
-        "ppm": 4.384,
-        "gain": 0,
-        "offset_tuning": false,
-        "device_index": 0
+  "git_revision": "master",
+  "install_path": "/srv/pymma",
+  "virtualenv": "/srv/pymma/.virtualenv",
+  "git_repo": "https://github.com/ampledata/pymma.git",
+  "config_path": "/etc/pymma.json",
+  "callsign": "TACO",
+  "passcode": "25836",
+  "gateways": [
+    "noam.aprs2.net:14580",
+    "sjc.aprs2.net:14580",
+    "ipv6.aprs2.net:14580",
+    "socal.aprs2.net:14580",
+    "northwest.aprs2.net:14580",
+    "oregon.aprs2.net:14580"
+  ],
+  "preferred_protocol": "any",
+  "append_callsign": true,
+  "source": "rtl",
+  "rtl": {
+    "freq": 144.39,
+    "ppm": 30,
+    "gain": 42.0,
+    "offset_tuning": false,
+    "device_index": 0
+  },
+  "alsa": {
+    "device": "default"
+  },
+  "beacon": {
+    "location": {
+      "source": "static",
+      "lat": "37.767",
+      "lng": "-122.4068333333333",
+      "ambiguity": 0
     },
-    "alsa": {
-        "device": "default"
+    "table": "/",
+    "symbol": "&",
+    "comment": "PYMMA IGate",
+    "status": {
+      "text": "W2GMD oro-net.org Public Service IGate",
+      "file": false
     },
-    "beacon": {
-        "lat": 51.00000,
-        "lng": 10.00000,
-        "table": "/",
-        "symbol": "&",
-        "comment": "PyMultimonAPRS iGate",
-        "status": {
-            "text": "Running on Creator CI20 MIPS with RTL dongle.",
-            "file": false
-        },
-        "weather": false,
-        "send_every": 3600,
-        "ambiguity": 0
-    }
+    "weather": false,
+    "send_every": 3600,
+  },
+  "multimon-ng": {
+    "install_path": "/usr/local/multimon-ng"
+  },
+  "kalibrate-rtl": {
+    "install_path": "/usr/local/kalibrate-rtl"
+  }
 }
