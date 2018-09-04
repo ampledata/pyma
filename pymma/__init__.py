@@ -13,7 +13,7 @@ from .functions import (process_ambiguity, encode_lat, encode_lng,  # NOQA
                         get_beacon_frame, get_status_frame,
                         get_weather_frame)
 
-from .classes import (IGateThread, BeaconThread, GPSBeaconThread,  # NOQA
+from .classes import (IGateThread, StaticBeaconThread, GPSBeaconThread,  # NOQA
                       MultimonThread, SerialGPSPoller)
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'

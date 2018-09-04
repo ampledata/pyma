@@ -14,12 +14,13 @@ import threading
 import time
 
 import pkg_resources
-import pynmea2
 import requests
+
 import serial
 
-import aprslib  # type: ignore
 from aprslib.packets.base import APRSPacket  # type: ignore
+
+import pynmea2
 
 import pymma
 
@@ -285,7 +286,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
         self._logger.info('Sending thread exit.')
 
 
-class BeaconThread(threading.Thread):
+class StaticBeaconThread(threading.Thread):
 
     """
     Threaded Beacon.
@@ -301,7 +302,7 @@ class BeaconThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, igate, config):
-        super(BeaconThread, self).__init__()
+        super(StaticBeaconThread, self).__init__()
         self.igate = igate
         self.config = config
         self.daemon = True
@@ -382,7 +383,7 @@ class GPSBeaconThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, igate, config, gps):
-        super(BeaconThread, self).__init__()
+        super(GPSBeaconThread, self).__init__()
         self.igate = igate
         self.config = config
         self.gps = gps

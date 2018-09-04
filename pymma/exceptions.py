@@ -9,4 +9,5 @@ __license__ = 'GNU General Public License, Version 3'
 
 
 class InvalidFrame(Exception):
+    """Raised when we receive and Invalid APRS Frame."""
     pass

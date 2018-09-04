@@ -58,17 +58,17 @@ def cli():
         threads.append(beacon_thread)
 
     try:
-        [thr.start() for thr in threads]
+        [thr.start() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
         frame_queue.join()
 
         while all([thr.is_alive() for thr in threads]):
             time.sleep(0.01)
     except KeyboardInterrupt:
-        [thr.stop() for thr in threads]
+        [thr.stop() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
     finally:
-        [thr.stop() for thr in threads]
+        [thr.stop() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
 
 if __name__ == '__main__':
