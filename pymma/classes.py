@@ -324,7 +324,7 @@ class StaticBeaconThread(threading.Thread):
         """
         Runs the thread.
         """
-        self._logger.info('Starting Beacon Thread="%s"', self)
+        self._logger.info('Running StaticBeaconThread="%s"', self)
 
         beacon_config = self.config.get('beacon')
 
