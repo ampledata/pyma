@@ -274,6 +274,9 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                         'Connection issue, sleeping for %ss: "%s"',
                         rand_sleep, str(exc))
                     time.sleep(rand_sleep)
+                elif exc.errno == errno.EPIPE:
+                    self._logger.exception(exc)
+                    raise
                 else:
                     self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
