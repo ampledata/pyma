@@ -14,16 +14,14 @@ import threading
 import time
 
 import pkg_resources
-import pynmea2
 import requests
+
 import serial
 
-<<<<<<< HEAD
-=======
-import aprslib  # type: ignore
 from aprslib.packets.base import APRSPacket  # type: ignore
 
->>>>>>> feature/python3_support
+import pynmea2
+
 import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
@@ -229,34 +227,16 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                 try:
                     # wait max 1sec for new data
                     frame = self.frame_queue.get(True, 1)
-<<<<<<< HEAD
-                    self._logger.info('Sending: "%s"', frame)
-                    raw_frame = "%s\r\n" % frame
-=======
                     if not frame:
                         next
                     self._logger.info('Sending via TCP frame="%s"', frame)
                     raw_frame = bytes(str(frame) + '\n', 'utf8')
 
->>>>>>> feature/python3_support
                     total_sent = 0
                     while total_sent < len(raw_frame):
                         sent = self.socket.send(raw_frame[total_sent:])
                         if sent == 0:
                             raise socket.error(
-<<<<<<< HEAD
-                                0, "Failed to send data, 0 bytes sent.")
-                        total_sent += sent
-                except Queue.Empty as ex:
-                    #
-                    # Normally you should log all catched exceptions, only
-                    # Queue uses the anti-pattern of try/catch for flow
-                    # control, so we're not going to log it in this case.
-                    #
-                    # See: http://wiki.c2.com/?DontUseExceptionsForFlowControl
-                    #
-                    # self._logger.exception(ex)
-=======
                                 0,
                                 'Failed to send data - '
                                 'number of sent bytes: 0')
@@ -264,27 +244,12 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                         self._logger.debug(
                             'total_sent="%s" sent="%s"', total_sent, sent)
                 except queue.Empty:
->>>>>>> feature/python3_support
                     pass
 
                 # (try to) read from socket to prevent buffer fillup
                 self.socket.setblocking(False)
 
                 try:
-<<<<<<< HEAD
-                    self.socket.recv(40960)
-                except socket.error as ex:
-                    # "[Errno 11] Resource temporarily unavailable" is OK.
-                    # self._logger.exception(ex)
-                    if not ex.errno == 11:
-                        self._logger.exception(ex)
-                        # if the error is other than 'rx queue empty'
-                        raise
-                self.socket.setblocking(1)
-            except socket.error as ex:
-                # Possible errors on IO:
-                #
-=======
                     self.socket.recv(4096)
                 except socket.error as exc:
                     if exc.errno != 11:
@@ -294,18 +259,13 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                 self.socket.setblocking(True)
             except socket.error as exc:
                 # possible errors on IO:
->>>>>>> feature/python3_support
                 # [Errno  11] Buffer is empty (maybe not when using blocking
                 #             sockets)
                 # [Errno  32] Broken Pipe
                 # [Errno 104] Connection reset by peer
                 # [Errno 110] Connection time out
-<<<<<<< HEAD
                 #
-                self._logger.exception(ex)
-=======
                 self._logger.exception(exc)
->>>>>>> feature/python3_support
 
                 rand_sleep = random.randint(1, 20)
 
@@ -314,6 +274,9 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
                         'Connection issue, sleeping for %ss: "%s"',
                         rand_sleep, str(exc))
                     time.sleep(rand_sleep)
+                elif exc.errno == errno.EPIPE:
+                    self._logger.exception(exc)
+                    raise
                 else:
                     self._logger.warning(
                         'Connection issue, sleeping for %ss: "%s"',
@@ -326,7 +289,7 @@ class IGateThread(threading.Thread):  # pylint: disable=too-many-instance-attrib
         self._logger.info('Sending thread exit.')
 
 
-class BeaconThread(threading.Thread):
+class StaticBeaconThread(threading.Thread):
 
     """
     Threaded Beacon.
@@ -342,7 +305,7 @@ class BeaconThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, igate, config):
-        super(BeaconThread, self).__init__()
+        super(StaticBeaconThread, self).__init__()
         self.igate = igate
         self.config = config
         self.daemon = True
@@ -364,7 +327,7 @@ class BeaconThread(threading.Thread):
         """
         Runs the thread.
         """
-        self._logger.info('Starting Beacon Thread="%s"', self)
+        self._logger.info('Running StaticBeaconThread="%s"', self)
 
         beacon_config = self.config.get('beacon')
 
@@ -423,7 +386,7 @@ class GPSBeaconThread(threading.Thread):
         _logger.propagate = False
 
     def __init__(self, igate, config, gps):
-        super(BeaconThread, self).__init__()
+        super(GPSBeaconThread, self).__init__()
         self.igate = igate
         self.config = config
         self.gps = gps
@@ -612,31 +575,18 @@ class MultimonThread(threading.Thread):
                     name, exc)
         self._stopper.set()
 
-<<<<<<< HEAD
-    def _multimon_worker(self):
-        while self._running:
-            read_line = self.processes['multimon'].stdout.readline().strip()
-            matched_line = pymma.START_FRAME_REX.match(read_line)
-            if matched_line:
-                self.handle_frame(matched_line.group(1))
-=======
     def stopped(self):
         """
         Checks if the thread is stopped.
         """
         return self._stopper.isSet()
->>>>>>> feature/python3_support
 
     def reject_frame(self, frame: APRSPacket) -> bool:
         """Determines if the frame should be rejected."""
         if set(self.config.get(
                 'reject_paths',
                 pymma.REJECT_PATHS)).intersection(frame.path):
-<<<<<<< HEAD
-            self._logger.warn(
-=======
             self._logger.warning(
->>>>>>> feature/python3_support
                 'Rejected frame with REJECTED_PATH: "%s"', frame)
             return True
         elif (bool(self.config.get('reject_internet')) and
@@ -647,21 +597,6 @@ class MultimonThread(threading.Thread):
 
         return False
 
-<<<<<<< HEAD
-    def handle_frame(self, frame):
-        try:
-            aprs_frame = aprs.Frame(frame)
-            self._logger.debug('aprs_frame=%s', aprs_frame)
-
-            if bool(self.config.get('append_callsign')):
-                aprs_frame.path.extend(['qAR', self.config['callsign']])
-
-            if not self.reject_frame(aprs_frame):
-                self.frame_queue.put(aprs_frame, True, 10)
-        except aprs.BadCallsignError as ex:
-            self._logger.exception(ex)
-            pass
-=======
     def handle_frame(self, frame: bytes) -> None:
         """Handles the Frame from the APRS Decoder."""
         self._logger.debug('Handling frame="%s"', frame)
@@ -753,4 +688,3 @@ class SerialGPSPoller(threading.Thread):
                 for prop in pymma.NMEA_PROPERTIES:
                     if getattr(msg, prop, None) is not None:
                         self.gps_props[prop] = getattr(msg, prop)
->>>>>>> feature/python3_support

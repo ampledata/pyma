@@ -11,7 +11,6 @@ import aprslib
 
 from aprslib.packets.base import APRSPacket
 
-import pymma
 
 __author__ = 'Greg Albrecht W2GMD <oss@undef.net>'
 __copyright__ = 'Copyright 2016 Dominik Heidler'
@@ -38,23 +37,19 @@ def encode_lat(lat: float) -> str:
     """
     Encode Latitude in DDMMSS format.
     """
-    lat_dir = 'N' if lat > 0 else 'S'
     lat_abs = abs(lat)
     lat_deg = int(lat_abs)
     lat_min = (lat_abs % 1) * 60
-    #return "%02i%05.2f%c" % (lat_deg, lat_min, lat_dir)
     return "%02i%05.2f" % (lat_deg, lat_min)
 
 
-def encode_lng(lng: float):
+def encode_lng(lng: float) -> str:
     """
     Encode Longitude in DDMMSS format.
     """
-    lng_dir = 'E' if lng > 0 else 'W'
     lng_abs = abs(lng)
     lng_deg = int(lng_abs)
     lng_min = (lng_abs % 1) * 60
-    #return "%03i%05.2f%c" % (lng_deg, lng_min, lng_dir)
     return "%03i%05.2f" % (lng_deg, lng_min)
 
 
@@ -64,9 +59,6 @@ def get_beacon_frame(lat: float, lng: float, callsign: str, table: str,  # NOQA 
     """
     Generate beacon frame.
     """
-    enc_lat = process_ambiguity(encode_lat(lat), ambiguity)
-    enc_lng = process_ambiguity(encode_lng(lng), ambiguity)
-
     frame = aprslib.packets.PositionReport()
     frame.fromcall = callsign
     frame.tocall = 'APYSPM'

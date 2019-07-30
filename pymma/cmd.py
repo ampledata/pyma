@@ -37,15 +37,17 @@ def cli():
 
     threads = [igate_thread, multimon_thread]
 
+    # Beacon Config
     location_config: dict = {}
     beacon_config = config.get('beacon')
+
     if beacon_config:
         location_config = beacon_config.get('location')
 
-    if location_config.get('static'):
+    if location_config and location_config.get('source') == 'static':
         beacon_thread = pymma.StaticBeaconThread(igate_thread, config)
         threads.append(beacon_thread)
-    elif location_config.get('gps'):
+    elif location_config and location_config.get('source') == 'gps':
         gps_config = location_config.get('gps')
         gps_p = pymma.SerialGPSPoller(gps_config['port'], gps_config['speed'])
         threads.append(gps_p)
@@ -57,18 +59,19 @@ def cli():
         beacon_thread = pymma.GPSBeaconThread(igate_thread, config)
         threads.append(beacon_thread)
 
+    # Start and Stop Threads
     try:
-        [thr.start() for thr in threads]
+        [thr.start() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
         frame_queue.join()
 
         while all([thr.is_alive() for thr in threads]):
             time.sleep(0.01)
     except KeyboardInterrupt:
-        [thr.stop() for thr in threads]
+        [thr.stop() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
     finally:
-        [thr.stop() for thr in threads]
+        [thr.stop() for thr in threads]  # NOQA pylint: disable=expression-not-assigned
 
 
 if __name__ == '__main__':
